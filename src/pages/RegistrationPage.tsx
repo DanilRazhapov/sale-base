@@ -1,61 +1,58 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthLayout } from "../components/AuthLayout";
 
 const RegisterPage = () => {
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const navigate = useNavigate()
+    const [busy, setBusy] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const submitting = useRef(false);
+    const navigate = useNavigate();
 
     async function handleRegister(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
-
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
+        if (submitting.current) return;
+        if (!fullName.trim()) { setErrorMessage("Введите ваше имя."); return; }
+        submitting.current = true;
+        setBusy(true); setErrorMessage("");
+        try {
+            const { error } = await supabase.auth.signUp({
+                email: email.trim(),
+                password,
+                options: {
+                    data: {
+                        full_name: fullName.trim(),
+                    }
                 }
+            });
+
+            if (error) {
+                setErrorMessage(error.message);
+                return;
             }
-        });
 
-        if (error) {
-            alert('Error registering user: ' + error.message);
-            return;
-        }
-
-        navigate("/login")
+            navigate("/login", { state: { registered: true } });
+        } catch { setErrorMessage("Не удалось создать аккаунт. Проверьте подключение и попробуйте снова."); }
+        finally { submitting.current = false; setBusy(false); }
     }
 
     return (
-        <div>
-            <form onSubmit={handleRegister}> 
-                <input 
-                    placeholder="Fullname"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                />
-                <input 
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <input 
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-
-                <button type="submit">Register</button>
+        <AuthLayout title="Создайте аккаунт" description="Начните с регистрации — затем добавьте магазин и кассиров."
+            footer={<>Уже зарегистрированы? <Link to="/login">Войти в кабинет</Link></>}>
+            <form className="app-form" onSubmit={handleRegister} aria-busy={busy}>
+                <fieldset disabled={busy}>
+                    <label htmlFor="register-name">Ваше имя<input id="register-name" name="name" autoComplete="name" placeholder="Как к вам обращаться" maxLength={120} required value={fullName} onChange={(e) => setFullName(e.target.value)} /></label>
+                    <label htmlFor="register-email">Электронная почта<input id="register-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+                    <label htmlFor="register-password">Пароль<input id="register-password" name="password" type="password" autoComplete="new-password" placeholder="Придумайте пароль" required value={password} onChange={(e) => setPassword(e.target.value)} /></label>
+                    {errorMessage && <p className="app-message app-message-error" role="alert">{errorMessage}</p>}
+                    <button className="app-button app-button-primary app-button-full" type="submit">{busy ? "Создаём аккаунт…" : "Создать аккаунт"}<span aria-hidden="true">→</span></button>
+                </fieldset>
             </form>
-
-            <button onClick={() => navigate('/login')}>Already have an account?</button>
-        </div>
+        </AuthLayout>
     )
 }
 
