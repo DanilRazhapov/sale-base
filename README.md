@@ -1,78 +1,93 @@
-# React + TypeScript + Vite
+# SaleBase
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite. Интерфейс владельца и рабочее место кассира размещаются на Cloudflare Pages. База, авторизация владельца и Edge Functions остаются в Supabase.
 
-Currently, two official plugins are available:
+## Локальная разработка
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Все команды выполняются из `frontend`:
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+npm ci
+Copy-Item .env.example .env.local
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Заполните `.env.local` значениями своего проекта Supabase:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```dotenv
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
+
+```powershell
+npm run dev
+```
+
+Версия Node.js для сборки указана в `.node-version`. Стили страниц находятся в `src/css`, глобальный файл стилей — `src/index.css`.
+
+## Cloudflare Pages через Git
+
+При подключении репозитория задайте:
+
+| Настройка | Значение |
+| --- | --- |
+| Root directory | `frontend` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Конфигурация Wrangler | `frontend/wrangler.toml` |
+| Имя Pages-проекта | `salebase` |
+
+Если проект в Cloudflare называется иначе, измените `name` в `wrangler.toml`.
+
+В настройках переменных окружения сборки добавьте `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` для Production и Preview. Используйте значения из своего Supabase-проекта.
+
+Vite встраивает эти значения в JavaScript во время сборки. Переменные `[vars]` в Wrangler не заменяют переменные окружения сборки. После изменения значений требуется новая сборка. При отсутствии обязательных переменных `npm run build` завершится с понятной ошибкой.
+
+Publishable key предназначен для браузера. Секретный ключ и `service_role` в `VITE_*` не добавляются. `.env.local` не нужно коммитить.
+
+## Cloudflare Pages через Wrangler
+
+Сначала соберите приложение с заполненным `.env.local`:
+
+```powershell
+npm run build
+npx wrangler login
+```
+
+Если Pages-проект ещё не создан:
+
+```powershell
+npx wrangler pages project create salebase
+```
+
+Публикация готовой сборки:
+
+```powershell
+npx wrangler pages deploy dist --project-name salebase
+```
+
+Проверка готовой сборки локально в окружении Pages:
+
+```powershell
+npx wrangler pages dev dist
+```
+
+`wrangler.toml` задаёт имя проекта, папку `dist` и дату совместимости. Сам Wrangler не запускает Vite-сборку перед `pages deploy`.
+
+## Маршруты приложения
+
+Cloudflare Pages автоматически обслуживает SPA при отсутствии корневого `404.html`. Благодаря этому прямое открытие и обновление `/cashier/`, `/owner` и `/store/:storeId` передаётся React Router. Не добавляйте `404.html` в `public`, если хотите сохранить это поведение.
+
+## Supabase
+
+Публикация на Pages не применяет SQL-миграции и не публикует Edge Functions. Для них отдельно выполняются:
+
+```powershell
+npx supabase db push
+npx supabase functions deploy create-store
+npx supabase functions deploy create-cashier
+npx supabase functions deploy cashier-terminal
+```
+
+Если используется подтверждение почты или перенаправление после авторизации, настройте адрес опубликованного сайта в Supabase Auth → URL Configuration.
+
+Документация Cloudflare: [Wrangler для Pages](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [настройки сборки](https://developers.cloudflare.com/pages/configuration/build-configuration/), [маршрутизация SPA](https://developers.cloudflare.com/pages/configuration/serving-pages/).

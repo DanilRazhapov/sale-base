@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { terminalRequest, TerminalError } from "../lib/cashierTerminal";
 import { lineCents, quantityMilli, readCartDraft, type CartDraft, type CartKind, type PendingCheckout, type TerminalProduct, type TerminalSnapshot } from "../lib/cashierCart";
 import { TerminalDialog } from "./TerminalDialog";
-import "../pages/CashierPage.css";
+import "../css/CashierPage.css";
 
 const money = (value: number) => value.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const kindName = { sale: "Продажа", receipt: "Приход", writeoff: "Списание" };

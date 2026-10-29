@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import "./StorePage.css";
+import "../css/StorePage.css";
 
 type Store = { id: string; name: string; address: string | null };
 type Category = { id: number; name: string };

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { Link } from "react-router-dom";
-import "./StorePage.css";
+import "../css/StorePage.css";
 
 type Store = {
   id: string;

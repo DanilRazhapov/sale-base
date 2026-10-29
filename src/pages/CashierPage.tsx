@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { TerminalError, terminalRequest } from "../lib/cashierTerminal";
 import type { TerminalSnapshot } from "../lib/cashierCart";
 import { CashierPOS } from "../components/CashierPOS";
-import "./StorePage.css";
-import "./CashierPage.css";
+import "../css/StorePage.css";
+import "../css/CashierPage.css";
 
 const storageKey = "salebase.cashier-session";
 const errorText = (error: unknown) => error instanceof Error ? error.message : "Не удалось выполнить операцию.";
