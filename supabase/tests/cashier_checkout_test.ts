@@ -41,7 +41,12 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     `);
     const migrations: string[] = [];
     for await (const entry of Deno.readDir(new URL("../migrations/", import.meta.url))) if (entry.name.endsWith(".sql")) migrations.push(entry.name);
-    for (const name of migrations.sort()) await db.exec(await Deno.readTextFile(new URL(`../migrations/${name}`, import.meta.url)));
+    for (const name of migrations.sort()) {
+      // PGlite has no background workers/pg_cron; exercise the scheduled function
+      // directly in cashier_terminal_test instead. Apply all business migrations.
+      if (name === "20261031010100_schedule_shift_expiry.sql") continue;
+      await db.exec(await Deno.readTextFile(new URL(`../migrations/${name}`, import.meta.url)));
+    }
     await db.exec(`
       insert into public.profiles(id) values('${owner}');
       insert into public.stores(id,name,created_by) values('${store}','Store','${owner}'),('${otherStore}','Other','${owner}');
@@ -93,5 +98,17 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [owner]);
     assert((await row("select count(*) as n from public.cashier_receipts")).n === 3, "Owner can read receipts");
     await fails(checkout, [hash, request, JSON.stringify(items), "sale"], "42501");
+    await db.exec("reset role; set role service_role;");
+    const overdue = await row("select * from public.cashier_open_shift($1,0)", [hash]);
+    await db.exec("reset role;");
+    await db.query("update public.cashier_shifts set opened_at=clock_timestamp()-interval '12 hours 1 second' where id=$1", [overdue.id]);
+    await db.exec("set role service_role;");
+    const stockBefore = (await row("select stock from public.products where id=$1", [first])).stock;
+    await fails(checkout, [hash, "50000000-0000-4000-8000-000000000004", JSON.stringify(items), "sale"], "42501");
+    assert((await row("select stock from public.products where id=$1", [first])).stock === stockBefore, "Expired shift cannot sell stock");
+    assert((await row("select count(*) as n from public.cashier_receipts")).n === 3, "Expired checkout creates no receipt");
+    // A snapshot commits the cleanup even after a rejected checkout rolled back.
+    await row("select public.cashier_tablet_snapshot($1)", [hash]);
+    assert((await row("select automatically_closed from public.cashier_shifts where id=$1", [overdue.id])).automatically_closed, "Overdue checkout shift subsequently closes");
   } finally { await db.close(); }
 });

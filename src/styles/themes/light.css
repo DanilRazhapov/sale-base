@@ -1,0 +1,35 @@
+/* Semantic colors shared by every component. Keep both theme files in sync. */
+@layer base {
+  :root {
+    --canvas: #f0f4f8;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --surface-muted: #e8eef5;
+    --ink: #172b3a;
+    --muted: #52667a;
+    --placeholder: #627488;
+    --line: #dce4ed;
+    --line-soft: #e8eef5;
+    --line-strong: #a6b5c5;
+    --brand: #1468db;
+    --brand-soft: #ebf2ff;
+    --brand-tint: #dbeafe;
+    --brand-line: #bfdbfe;
+    --brand-hover: #79a9ed;
+    --action: #1468db;
+    --action-hover: #0f58bf;
+    --on-action: #ffffff;
+    --danger: #b91c1c;
+    --danger-soft: #fef2f2;
+    --danger-line: #fecaca;
+    --danger-action: #b91c1c;
+    --danger-hover: #991b1b;
+    --success: #047857;
+    --success-soft: #ecfdf5;
+    --success-line: #a7f3d0;
+    --warning: #854d0e;
+    --warning-soft: #fef3c7;
+    --overlay: #0f172a8c;
+    --shadow-card: 0 12px 45px #193a6110;
+  }
+}

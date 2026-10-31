@@ -23,6 +23,13 @@ export default {
     }
 
     try {
+      // Owner credentials must never authorize terminal actions, even with a cashier PIN.
+      const authorization = req.headers.get("Authorization");
+      const bearer = authorization?.match(/^Bearer (.+)$/i)?.[1];
+      if (bearer && !bearer.startsWith("sb_publishable_")) {
+        const { data } = await ctx.supabaseAdmin.auth.getUser(bearer);
+        if (data.user) return json({ error: "Вы вошли как владелец. Выйдите из кабинета перед входом кассира." }, 403);
+      }
       const { action } = body;
       if (action === "login") {
         if (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 120 ||
@@ -93,10 +100,10 @@ export default {
     } catch (error) {
       const failure = error as { code?: string; message?: string };
       const status = failure.code === "28000" ? 401 : failure.code === "42501" ? 403
-        : failure.code === "23505" ? 409 : ["22023", "22P02"].includes(failure.code ?? "") ? 400 : 500;
+        : ["23505", "PT409"].includes(failure.code ?? "") ? 409 : ["22023", "22P02"].includes(failure.code ?? "") ? 400 : 500;
       if (status === 500) console.error("Cashier terminal failure:", failure.code, failure.message);
       return json({ error: status === 500 ? "Не удалось выполнить операцию кассира."
-        : status === 409 ? "В магазине уже открыта смена. Обновите данные."
+        : failure.code === "23505" ? "В магазине уже открыта смена. Обновите данные."
         : failure.message ?? "Операция недоступна." }, status);
     }
   }),

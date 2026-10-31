@@ -1,0 +1,68 @@
+@layer components {
+  .store-section {
+    @apply mt-6 rounded-2xl border border-line bg-surface p-6 max-sm:p-4;
+  }
+  .product-editor {
+    @apply min-w-0 rounded-2xl border border-line bg-surface p-8 max-sm:p-4;
+  }
+  .store-create-form {
+    @apply rounded-2xl border border-line bg-surface p-8 max-lg:p-6 max-[400px]:px-4;
+  }
+  .store-create-actions {
+    @apply mt-1 flex items-center justify-end gap-3 border-t border-line-soft pt-6 max-[400px]:flex-col-reverse max-[400px]:items-stretch;
+  }
+  .store-preview {
+    @apply flex min-h-56 flex-col rounded-2xl border border-line bg-surface p-6 text-ink no-underline transition hover:border-brand-hover hover:shadow-sm motion-reduce:transition-none [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere pointer-events-none [&>p]:whitespace-pre-line;
+  }
+  .store-preview-badge {
+    @apply rounded-md bg-brand-soft px-2 py-1 text-[10px] font-semibold text-brand;
+  }
+  .store-next-steps {
+    @apply pt-6 [&_h2]:text-base [&_ol]:mt-4 [&_ol]:flex [&_ol]:list-none [&_ol]:flex-col [&_ol]:gap-5 [&_ol]:p-0 [&_ol]:[counter-reset:step] [&_li]:relative [&_li]:pl-11 [&_li]:[counter-increment:step] [&_li]:before:absolute [&_li]:before:top-0 [&_li]:before:left-0 [&_li]:before:grid [&_li]:before:size-7 [&_li]:before:place-items-center [&_li]:before:rounded-lg [&_li]:before:border [&_li]:before:border-brand-line [&_li]:before:bg-brand-soft [&_li]:before:text-xs [&_li]:before:font-bold [&_li]:before:text-brand [&_li]:before:content-[counter(step)] [&_strong]:block [&_strong]:text-sm [&_li>span]:mt-1 [&_li>span]:block [&_li>span]:text-xs [&_li>span]:text-muted;
+  }
+  .home-welcome {
+    @apply mt-8 flex items-center justify-between gap-7 rounded-3xl border border-brand-line bg-linear-to-r from-surface to-brand-soft p-9 max-md:gap-4 max-md:p-6 [&_h1]:my-3 [&_h1]:text-[clamp(1.75rem,3.2vw,2.4rem)] [&_h1]:leading-tight [&_h1]:tracking-tight [&_h1]:wrap-anywhere [&_p]:max-w-xl [&_p]:text-muted;
+  }
+  .home-avatar {
+    @apply grid size-24 shrink-0 place-items-center rounded-3xl border-8 border-surface/70 bg-brand-tint text-4xl font-bold text-brand max-md:size-16 max-md:border-4 max-md:text-2xl max-[440px]:hidden;
+  }
+  .home-status {
+    @apply mt-6 flex items-center gap-4 rounded-2xl border border-line bg-surface/70 px-6 py-5 [&_p]:text-sm [&_p]:wrap-anywhere [&_small]:text-muted;
+  }
+  .home-status-dot {
+    @apply size-2.5 shrink-0 rounded-full bg-success;
+  }
+  .store-count {
+    @apply inline-grid min-w-6.5 place-items-center rounded-lg bg-brand-tint px-2 py-0.5 text-xs font-bold text-brand;
+  }
+  .store-card {
+    @apply flex min-h-56 flex-col rounded-2xl border border-line bg-surface p-6 text-ink no-underline transition hover:border-brand-hover hover:shadow-sm motion-reduce:transition-none [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere;
+  }
+  .store-status {
+    @apply inline-flex items-center gap-1 rounded-md bg-success-soft px-2 py-1 text-[10px] font-semibold text-success;
+  }
+  .stores-empty {
+    @apply rounded-2xl border border-dashed border-line-strong bg-surface/60 px-6 py-11 text-center [&>span]:mx-auto [&>span]:mb-4 [&_h3]:text-xl [&>p]:mx-auto [&>p]:mt-2 [&>p]:mb-5 [&>p]:max-w-sm [&>p]:text-sm [&>p]:text-muted;
+  }
+  .store-create-sidebar {
+    @apply sticky top-6 rounded-2xl border border-line bg-surface p-6 max-md:static [&>h2]:mt-4 [&>h2]:mb-2 [&>p:not([role])]:mb-6 [&>p:not([role])]:text-sm [&>p:not([role])]:text-muted [&>p[role]]:mt-4;
+  }
+  .inventory-catalog {
+    @apply min-w-0 rounded-2xl border border-line bg-surface p-5;
+  }
+  .inventory-product {
+    @apply w-full rounded-xl border border-line bg-surface p-4 text-left text-ink disabled:opacity-50 hover:bg-surface-soft aria-pressed:border-brand-hover aria-pressed:bg-brand-soft;
+  }
+  .store-statistics {
+    @apply mt-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4 [&_article]:rounded-2xl [&_article]:border [&_article]:border-line [&_article]:bg-surface-soft [&_article]:p-5 [&_span]:block [&_strong]:mt-2 [&_strong]:block [&_strong]:text-2xl;
+  }
+  .product-image-field {
+    @apply sm:col-span-2 rounded-xl border border-dashed border-line bg-surface-soft p-5;
+  }
+  .stock-warning {
+    @apply text-warning;
+  }
+  .stock-critical {
+    @apply text-red-800;
+  }
+}

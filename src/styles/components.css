@@ -1,0 +1,135 @@
+@layer components {
+  .ui-button {
+    @apply cursor-pointer touch-manipulation font-semibold transition hover:outline-1 disabled:cursor-default disabled:opacity-50 motion-reduce:transition-none aria-pressed:border-brand aria-pressed:bg-action aria-pressed:text-on-action min-h-12 rounded-xl border border-line bg-surface px-4 py-2.5 text-ink;
+  }
+  .ui-button-base {
+    @apply cursor-pointer touch-manipulation font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-default disabled:opacity-50 motion-reduce:transition-none aria-pressed:border-brand aria-pressed:bg-action aria-pressed:text-on-action;
+  }
+  .ui-input {
+    @apply min-h-12 w-full rounded-xl border border-line bg-surface px-3.5 py-3 text-base text-ink placeholder:text-placeholder focus:border-brand focus:outline-2 focus:outline-offset-2 focus:outline-brand disabled:opacity-60;
+  }
+  .ui-checkbox {
+    @apply size-4 shrink-0 accent-brand;
+  }
+  .ui-label {
+    @apply flex min-w-0 flex-col gap-2 text-sm font-medium;
+  }
+  .ui-fieldset {
+    @apply flex min-w-0 flex-col gap-5 border-0 p-0;
+  }
+  .ui-title {
+    @apply text-3xl leading-tight font-bold tracking-tight;
+  }
+  .ui-heading {
+    @apply text-xl leading-tight font-semibold;
+  }
+  .ui-subheading {
+    @apply text-lg leading-tight font-semibold;
+  }
+  .ui-eyebrow {
+    @apply block text-[11px] font-bold tracking-widest text-muted;
+  }
+  .ui-muted {
+    @apply text-muted;
+  }
+  .ui-page {
+    @apply min-h-dvh bg-canvas font-sans leading-relaxed text-ink;
+  }
+  .ui-error {
+    @apply my-4 rounded-xl border border-danger-line bg-danger-soft p-4 text-sm text-danger;
+  }
+  .ui-notice {
+    @apply my-4 rounded-xl border border-success-line bg-success-soft p-4 text-sm text-success;
+  }
+  .empty-state {
+    @apply flex min-h-56 flex-col items-center justify-center p-6 text-center text-muted [&_p]:mt-2 [&_p]:text-sm;
+  }
+  .row-between {
+    @apply flex items-center justify-between gap-2.5;
+  }
+  .dialog-actions {
+    @apply mt-6 flex justify-end gap-3;
+  }
+  .button-soft-danger {
+    @apply min-h-12 rounded-xl border-0 bg-danger-soft px-4 py-2.5 text-sm text-danger;
+  }
+  .button-primary {
+    @apply min-h-14 w-full rounded-xl border border-brand bg-action px-4 py-3 text-lg text-on-action hover:bg-action-hover;
+  }
+  .button-danger {
+    @apply min-h-12 rounded-xl border border-danger-action bg-danger-action px-4 py-2.5 text-on-action hover:bg-danger-hover;
+  }
+  .brand-link {
+    @apply inline-flex items-center gap-2.5 text-2xl font-extrabold tracking-tight text-ink no-underline;
+  }
+  .brand-mark {
+    @apply grid size-10 shrink-0 place-items-center rounded-xl bg-action text-2xl font-extrabold text-on-action shadow-sm;
+  }
+  .management-page {
+    @apply mx-auto min-h-dvh max-w-7xl p-6 text-ink max-sm:p-3 [&_h1]:my-4 [&_h2]:mb-4 [&_section>p]:my-3 [&_header>p]:my-2 [&_a]:text-brand [&_a]:underline [&_fieldset]:flex [&_fieldset]:flex-row [&_fieldset]:flex-wrap [&_fieldset]:items-end [&_fieldset]:gap-4 [&_label]:min-w-0 [&_label]:basis-44 [&_label]:flex-1 [&_details]:mt-4 [&_summary]:cursor-pointer;
+  }
+  .site-header {
+    @apply flex min-h-24 items-center justify-between gap-5 border-b border-line max-md:min-h-20 max-md:flex-wrap max-md:gap-3.5 max-md:py-4 [&_nav]:flex [&_nav]:flex-wrap [&_nav]:items-center [&_nav]:gap-5 [&_nav>a:not([class*=inline-flex]):not([class*=button])]:text-sm [&_nav>a:not([class*=inline-flex]):not([class*=button])]:font-medium [&_nav>a:not([class*=inline-flex]):not([class*=button])]:text-muted [&_nav>a:not([class*=inline-flex]):not([class*=button])]:no-underline [&_nav>a[aria-current=page]]:text-brand;
+  }
+  .page-intro {
+    @apply mt-9 mb-7 flex items-end justify-between gap-5 max-md:mt-7 max-md:flex-col max-md:items-start [&_h1]:my-2 [&_h1]:text-4xl [&_h1]:leading-tight [&_h1]:tracking-tight max-md:[&_h1]:text-3xl [&_p]:max-w-2xl [&_p]:text-sm [&_p]:text-muted;
+  }
+  .icon-tile {
+    @apply grid size-12 shrink-0 place-items-center rounded-xl bg-brand-soft text-2xl text-brand;
+  }
+  .alert-error {
+    @apply rounded-xl border p-3.5 text-sm leading-relaxed wrap-anywhere border-danger-line bg-danger-soft text-danger;
+  }
+  .button-secondary {
+    @apply inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-line bg-surface px-5 py-3 text-sm text-ink no-underline hover:border-brand-hover hover:bg-brand-soft;
+  }
+  .card-footer {
+    @apply mt-5 flex justify-between border-t border-line-soft pt-4 text-xs font-semibold text-brand;
+  }
+  .navigation-card {
+    @apply flex min-h-56 flex-col rounded-2xl border border-line bg-surface p-6 text-ink no-underline transition hover:border-brand-hover hover:shadow-sm motion-reduce:transition-none [&_h3]:mt-5 [&_h3]:mb-2 [&_p]:flex-1 [&_p]:text-sm [&_p]:text-muted [&>span:last-child]:mt-6 [&>span:last-child]:flex [&>span:last-child]:justify-between [&>span:last-child]:text-sm [&>span:last-child]:font-semibold [&>span:last-child]:text-brand;
+  }
+  .icon-tile-success {
+    @apply grid size-12 shrink-0 place-items-center rounded-xl text-2xl bg-success-soft text-success;
+  }
+  .alert-success {
+    @apply rounded-xl border p-3.5 text-sm leading-relaxed wrap-anywhere border-success-line bg-success-soft text-success;
+  }
+  .button-submit {
+    @apply inline-flex min-h-12 items-center gap-2.5 rounded-xl border border-brand bg-action px-5 py-3 text-sm text-on-action no-underline shadow-sm hover:border-action-hover hover:bg-action-hover w-full justify-between;
+  }
+  .button-link-primary {
+    @apply inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-brand bg-action px-5 py-3 text-sm font-semibold text-on-action no-underline shadow-sm hover:border-action-hover hover:bg-action-hover;
+  }
+  .store-grid {
+    @apply grid grid-cols-2 gap-4 max-lg:grid-cols-1 max-md:grid-cols-2 max-[440px]:grid-cols-1;
+  }
+  .card-skeleton {
+    @apply min-h-56 animate-pulse rounded-2xl border border-line bg-surface-muted motion-reduce:animate-none;
+  }
+  .table-scroll {
+    @apply mt-4 overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_th]:border-b [&_th]:border-line [&_th]:p-3 [&_th]:align-top [&_th]:font-semibold [&_th]:whitespace-nowrap [&_td]:border-b [&_td]:border-line [&_td]:p-3 [&_td]:align-top;
+  }
+  .terminal-dialog {
+    @apply fixed inset-0 m-auto max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-24px))] overflow-y-auto rounded-2xl border-0 bg-surface p-6 font-sans leading-relaxed text-ink shadow-2xl backdrop:bg-overlay [&_label]:my-4;
+  }
+  .terminal-dialog-header {
+    @apply mb-3 flex items-center justify-between gap-2.5 [&_h2]:text-2xl [&_button]:min-w-12;
+  }
+
+  .login-page {
+    @apply grid min-h-dvh place-items-center bg-canvas p-5 font-sans leading-relaxed text-ink;
+  }
+  .login-card {
+    @apply w-full max-w-lg rounded-3xl border border-line bg-surface p-8 shadow-card max-sm:p-5 [&>h1]:mt-6 [&>h1]:mb-3 [&>p]:my-4 [&>p]:text-sm [&>p]:text-muted [&>a:last-child]:text-sm [&>a:last-child]:text-brand;
+  }
+  .login-options {
+    @apply grid gap-4;
+  }
+  .login-option {
+    @apply flex flex-col gap-2 rounded-xl border border-line p-5 no-underline hover:border-brand focus-visible:outline-2 focus-visible:outline-brand [&>strong]:text-lg [&>strong]:text-ink [&>span]:text-sm [&>span]:text-muted;
+  }
+  .session-loading {
+    @apply grid min-h-dvh place-items-center bg-canvas font-sans text-muted;
+  }
+}

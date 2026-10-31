@@ -1,0 +1,37 @@
+/* Native controls and app components follow the browser's theme together. */
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas: #0e1621;
+      --surface: #172231;
+      --surface-soft: #1b293a;
+      --surface-muted: #243449;
+      --ink: #e7eef7;
+      --muted: #a7b7cb;
+      --placeholder: #97a9bf;
+      --line: #34465d;
+      --line-soft: #293a50;
+      --line-strong: #647b96;
+      --brand: #85b8ff;
+      --brand-soft: #1b3454;
+      --brand-tint: #244469;
+      --brand-line: #355a85;
+      --brand-hover: #6a9bd8;
+      --action: #2563c5;
+      --action-hover: #2d6dd4;
+      --on-action: #ffffff;
+      --danger: #ffaaaa;
+      --danger-soft: #3e222d;
+      --danger-line: #79404c;
+      --danger-action: #b5263b;
+      --danger-hover: #c72d44;
+      --success: #73dfb0;
+      --success-soft: #173b32;
+      --success-line: #306a54;
+      --warning: #f8d58b;
+      --warning-soft: #3c301c;
+      --overlay: #020617b8;
+      --shadow-card: 0 12px 45px #00000038;
+    }
+  }
+}
