@@ -7,11 +7,11 @@ export default function StoreStockPage() {
     const { store, products, categories } = useOutletContext<StoreLayoutContext>();
 
     return (
-        <main className="management-page !max-w-[1600px]">
+        <main className="owner-page store-page">
             <StoreHeader
-                backTo={`/store/${store.id}`}
-                backLabel="Вернуться в магазин"
-                title={store.name}
+                store={store}
+                title="Остатки"
+                description="Следите за запасами и находите товары, которые пора пополнить."
             />
             <ProductStockSection products={products} categories={categories} storeId={store.id} />
         </main>

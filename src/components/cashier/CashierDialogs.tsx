@@ -5,6 +5,7 @@ import type { CashierPOSProps } from "./types";
 import type { CashierPOSState } from "./useCashierPOS";
 import { TerminalDialog } from "../TerminalDialog";
 import { terminalRequest } from "../../lib/cashierTerminal";
+import { PosIcon } from "./PosIcon";
 
 type Props = Pick<
     CashierPOSState,
@@ -225,15 +226,27 @@ export function CashierDialogs({
                     <div className="pos-history">
                         {snapshot.movements.map((item) => (
                             <article key={item.id}>
-                                <strong>{productMap.get(item.product_id)?.name ?? "Товар"}</strong>
-                                <p>
-                                    {item.note} · {item.direction > 0 ? "+" : "−"}
+                                <div>
+                                    <strong>{productMap.get(item.product_id)?.name ?? "Товар"}</strong>
+                                    <p>{item.note}</p>
+                                    <time dateTime={item.created_at}>
+                                        {new Date(item.created_at).toLocaleString("ru-RU")}
+                                    </time>
+                                </div>
+                                <span data-positive={item.direction > 0}>
+                                    {item.direction > 0 ? "+" : "−"}
                                     {item.quantity}
-                                </p>
-                                <small>{new Date(item.created_at).toLocaleString("ru-RU")}</small>
+                                </span>
                             </article>
                         ))}
-                        {!snapshot.movements.length && <p>Операций пока нет.</p>}
+                        {!snapshot.movements.length && (
+                            <div className="empty-state pos-empty-state">
+                                <span className="pos-empty-icon">
+                                    <PosIcon name="history" />
+                                </span>
+                                <strong>Операций пока нет</strong>
+                            </div>
+                        )}
                     </div>
                 </TerminalDialog>
             )}

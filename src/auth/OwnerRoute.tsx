@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "./session";
 import { supabase } from "../lib/supabase";
 import { ui } from "../lib/ui";
+import { AuthLayout } from "../components/AuthLayout";
 
 type OwnerRouteProps = { children: ReactNode };
 
@@ -58,25 +59,26 @@ export function OwnerRoute({ children }: OwnerRouteProps) {
     if (!access || access.userId !== userId)
         return (
             <div className="session-loading" role="status">
-                Проверяем доступ…
+                <span className="brand-mark" aria-hidden="true" />
+                <span>Проверяем доступ…</span>
             </div>
         );
     if (!access.allowed)
         return (
-            <main className="login-page">
-                <section className="login-card">
-                    <h1 className={ui.title}>Кабинет владельца недоступен</h1>
-                    <p>Не удалось подтвердить активный профиль владельца. Попробуйте войти снова.</p>
-                    {error && (
-                        <p className={ui.error} role="alert">
-                            {error}
-                        </p>
-                    )}
-                    <button className={ui.button} type="button" onClick={() => void logout()}>
-                        Выйти из аккаунта
-                    </button>
-                </section>
-            </main>
+            <AuthLayout
+                title="Кабинет владельца недоступен"
+                description="Не удалось подтвердить активный профиль владельца. Попробуйте войти снова."
+                showRoleLink={false}
+            >
+                {error && (
+                    <p className={ui.error} role="alert">
+                        {error}
+                    </p>
+                )}
+                <button className={ui.button} type="button" onClick={() => void logout()}>
+                    Выйти из аккаунта
+                </button>
+            </AuthLayout>
         );
     return children;
 }

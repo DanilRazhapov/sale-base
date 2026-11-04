@@ -1,70 +1,386 @@
 @layer components {
+  .store-page-header {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.9rem;
+    background: var(--paper);
+  }
+
+  .store-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 1.15rem clamp(1rem, 3vw, 2rem) 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+  }
+
+  .store-breadcrumb a {
+    color: var(--brand);
+    font-weight: 650;
+  }
+
+  .store-breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .store-page-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem clamp(1rem, 3vw, 2rem) 1.5rem;
+  }
+
+  .store-page-heading > :first-child {
+    min-width: 0;
+  }
+
+  .store-page-heading h1 {
+    font-size: clamp(1.9rem, 4vw, 3.5rem);
+    letter-spacing: -0.055em;
+    overflow-wrap: anywhere;
+  }
+
+  .store-page-heading p {
+    max-width: 43rem;
+    margin-top: 0.35rem;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  .store-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .store-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 clamp(0.5rem, 2vw, 1.4rem);
+    border-top: 1px solid var(--line-soft);
+    background: var(--surface-soft);
+  }
+
+  .store-tabs a {
+    min-height: 2.75rem;
+    padding: 0.7rem clamp(0.6rem, 2vw, 1rem);
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .store-tabs a:hover,
+  .store-tabs a[aria-current="page"] {
+    color: var(--brand);
+  }
+
+  .store-tabs a[aria-current="page"] {
+    border-color: var(--brand);
+  }
+
+  .store-tabs a:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .store-section,
+  .product-editor,
+  .store-create-form,
+  .inventory-catalog {
+    @apply min-w-0 rounded-xl border border-line bg-surface p-6 max-sm:p-4;
+  }
+
   .store-section {
-    @apply mt-6 rounded-2xl border border-line bg-surface p-6 max-sm:p-4;
+    margin-top: 1.25rem;
   }
-  .product-editor {
-    @apply min-w-0 rounded-2xl border border-line bg-surface p-8 max-sm:p-4;
+
+  .store-section-heading,
+  .inventory-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
   }
-  .store-create-form {
-    @apply rounded-2xl border border-line bg-surface p-8 max-lg:p-6 max-[400px]:px-4;
+
+  .store-section > p,
+  .store-section > details,
+  .store-section > form,
+  .product-editor > form {
+    margin-top: 1rem;
   }
+
+  .store-section > details > summary {
+    width: fit-content;
+    cursor: pointer;
+    color: var(--brand);
+    font-weight: 650;
+  }
+
+  .store-section p + button {
+    margin-top: 1rem;
+  }
+
+  .store-section .table-scroll {
+    border: 1px solid var(--line);
+    border-radius: 0.55rem;
+    font-size: 0.875rem;
+  }
+
+  .store-section .table-scroll th {
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .store-section .table-scroll td {
+    vertical-align: middle;
+  }
+
+  .store-section .table-scroll tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .store-section .table-scroll tr:hover td {
+    background: var(--surface-soft);
+  }
+
+  .store-section .table-scroll .ui-button {
+    min-height: 2.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .store-empty-row {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .store-status {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-semibold text-ink;
+  }
+
+  .store-status::before {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+  }
+
+  .store-status.is-active {
+    @apply bg-success-soft text-success;
+  }
+
+  .store-statistics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+  }
+
+  .store-statistics article {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 1.15rem;
+    border-radius: 0.65rem;
+    background: var(--navy);
+    color: #fffaf1;
+    overflow-wrap: anywhere;
+  }
+
+  .store-statistics article span {
+    color: #d5dce8;
+    font-size: 0.78rem;
+  }
+
+  .store-statistics article strong {
+    color: var(--amber);
+    font-size: clamp(1.2rem, 2.3vw, 1.7rem);
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+  }
+
+  .inventory-workspace {
+    display: grid;
+    grid-template-columns: minmax(15rem, 1fr) minmax(0, 1.4fr);
+    align-items: start;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .inventory-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inventory-workspace > .store-section {
+    margin-top: 0;
+  }
+
+  .inventory-toolbar {
+    margin-bottom: 1rem;
+  }
+
+  .inventory-products {
+    display: grid;
+    max-height: 24rem;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+    padding: 0.2rem;
+    overflow: auto;
+  }
+
+  .inventory-product {
+    @apply flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-ink hover:bg-surface-soft disabled:opacity-50 aria-pressed:border-brand-hover aria-pressed:bg-brand-soft;
+  }
+
+  .inventory-product-copy {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .inventory-product-copy strong,
+  .inventory-product-copy small {
+    display: block;
+  }
+
+  .inventory-product-copy small {
+    margin-top: 0.2rem;
+    color: var(--muted);
+  }
+
+  .inventory-product > :last-child {
+    color: var(--brand);
+  }
+
+  .product-image-field {
+    @apply rounded-lg border border-dashed border-line bg-surface-soft p-4 sm:col-span-2;
+  }
+
+  .category-list {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 1rem;
+  }
+
+  .category-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0.4rem 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--surface-soft);
+    overflow-wrap: anywhere;
+  }
+
+  .category-list button {
+    min-height: 2.35rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .stock-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .stock-filters > label:not(:last-child) {
+    flex: 1 1 11rem;
+  }
+
+  .stock-filters > :nth-child(n + 3) {
+    justify-content: center;
+    min-height: 2.75rem;
+  }
+
+  .stock-warning b,
+  .stock-critical b {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .stock-warning b {
+    @apply bg-warning-soft text-warning;
+  }
+
+  .stock-critical b {
+    @apply bg-danger-soft text-danger;
+  }
+
+  .owner-form-heading {
+    padding: 0 0 1.25rem;
+  }
+
+  .owner-form-heading .owner-kicker {
+    margin-bottom: 0.65rem;
+  }
+
+  .owner-form-layout {
+    display: grid;
+    max-width: 67rem;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+  }
+
   .store-create-actions {
-    @apply mt-1 flex items-center justify-end gap-3 border-t border-line-soft pt-6 max-[400px]:flex-col-reverse max-[400px]:items-stretch;
+    @apply mt-1 flex flex-wrap items-center justify-end gap-3 border-t border-line-soft pt-5 max-[400px]:flex-col-reverse max-[400px]:items-stretch;
   }
+
+  .owner-form-aside {
+    min-width: 0;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface-soft);
+  }
+
   .store-preview {
-    @apply flex min-h-56 flex-col rounded-2xl border border-line bg-surface p-6 text-ink no-underline transition hover:border-brand-hover hover:shadow-sm motion-reduce:transition-none [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere pointer-events-none [&>p]:whitespace-pre-line;
+    @apply flex min-h-48 flex-col rounded-xl border border-line bg-surface p-4 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere [&>p]:whitespace-pre-line;
   }
+
   .store-preview-badge {
-    @apply rounded-md bg-brand-soft px-2 py-1 text-[10px] font-semibold text-brand;
+    @apply rounded-md bg-brand-soft px-2 py-1 text-xs font-semibold text-brand;
   }
+
   .store-next-steps {
     @apply pt-6 [&_h2]:text-base [&_ol]:mt-4 [&_ol]:flex [&_ol]:list-none [&_ol]:flex-col [&_ol]:gap-5 [&_ol]:p-0 [&_ol]:[counter-reset:step] [&_li]:relative [&_li]:pl-11 [&_li]:[counter-increment:step] [&_li]:before:absolute [&_li]:before:top-0 [&_li]:before:left-0 [&_li]:before:grid [&_li]:before:size-7 [&_li]:before:place-items-center [&_li]:before:rounded-lg [&_li]:before:border [&_li]:before:border-brand-line [&_li]:before:bg-brand-soft [&_li]:before:text-xs [&_li]:before:font-bold [&_li]:before:text-brand [&_li]:before:content-[counter(step)] [&_strong]:block [&_strong]:text-sm [&_li>span]:mt-1 [&_li>span]:block [&_li>span]:text-xs [&_li>span]:text-muted;
   }
-  .home-welcome {
-    @apply mt-8 flex items-center justify-between gap-7 rounded-3xl border border-brand-line p-9 max-md:gap-4 max-md:p-6 [&_h1]:my-3 [&_h1]:text-[clamp(1.75rem,3.2vw,2.4rem)] [&_h1]:leading-tight [&_h1]:tracking-tight [&_h1]:wrap-anywhere [&_p]:max-w-xl [&_p]:text-muted;
-    background-color: var(--brand-soft);
-    background-image: linear-gradient(90deg, var(--surface), var(--brand-soft));
+
+  .cashier-access-note h2 {
+    margin: 0.65rem 0 0.35rem;
   }
-  .home-avatar {
-    @apply grid size-24 shrink-0 place-items-center rounded-3xl border-8 border-surface/70 bg-brand-tint text-4xl font-bold text-brand max-md:size-16 max-md:border-4 max-md:text-2xl max-[440px]:hidden;
+
+  .cashier-access-note p {
+    color: var(--muted);
+    font-size: 0.875rem;
   }
-  .home-status {
-    @apply mt-6 flex items-center gap-4 rounded-2xl border border-line bg-surface/70 px-6 py-5 [&_p]:text-sm [&_p]:wrap-anywhere [&_small]:text-muted;
-  }
-  .home-status-dot {
-    @apply size-2.5 shrink-0 rounded-full bg-success;
-  }
-  .store-count {
-    @apply inline-grid min-w-6.5 place-items-center rounded-lg bg-brand-tint px-2 py-0.5 text-xs font-bold text-brand;
-  }
-  .store-card {
-    @apply flex min-h-56 flex-col rounded-2xl border border-line bg-surface p-6 text-ink no-underline transition hover:border-brand-hover hover:shadow-sm motion-reduce:transition-none [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere;
-  }
-  .store-status {
-    @apply inline-flex items-center gap-1 rounded-md bg-success-soft px-2 py-1 text-[10px] font-semibold text-success;
-  }
-  .stores-empty {
-    @apply rounded-2xl border border-dashed border-line-strong bg-surface/60 px-6 py-11 text-center [&>span]:mx-auto [&>span]:mb-4 [&_h3]:text-xl [&>p]:mx-auto [&>p]:mt-2 [&>p]:mb-5 [&>p]:max-w-sm [&>p]:text-sm [&>p]:text-muted;
-  }
-  .store-create-sidebar {
-    @apply sticky top-6 rounded-2xl border border-line bg-surface p-6 max-md:static [&>h2]:mt-4 [&>h2]:mb-2 [&>p:not([role])]:mb-6 [&>p:not([role])]:text-sm [&>p:not([role])]:text-muted [&>p[role]]:mt-4;
-  }
-  .inventory-catalog {
-    @apply min-w-0 rounded-2xl border border-line bg-surface p-5;
-  }
-  .inventory-product {
-    @apply w-full rounded-xl border border-line bg-surface p-4 text-left text-ink disabled:opacity-50 hover:bg-surface-soft aria-pressed:border-brand-hover aria-pressed:bg-brand-soft;
-  }
-  .store-statistics {
-    @apply mt-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4 [&_article]:rounded-2xl [&_article]:border [&_article]:border-line [&_article]:bg-surface-soft [&_article]:p-5 [&_span]:block [&_strong]:mt-2 [&_strong]:block [&_strong]:text-2xl;
-  }
-  .product-image-field {
-    @apply sm:col-span-2 rounded-xl border border-dashed border-line bg-surface-soft p-5;
-  }
-  .stock-warning {
-    @apply text-warning;
-  }
-  .stock-critical {
-    @apply text-danger;
+
+  @media (max-width: 63.99rem) {
+    .owner-form-layout,
+    .inventory-workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .inventory-products {
+      max-height: 15rem;
+    }
   }
 }

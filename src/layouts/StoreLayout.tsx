@@ -3,6 +3,7 @@ import { Outlet, useParams } from "react-router-dom";
 import type { Store, Category, Product } from "../components/store/types";
 import { readStoreCatalog, requireStoreOwner, storeErrorMessage, isStoreId} from "../lib/storeData";
 import Throbber from "../components/Throbber";
+import { ui } from "../lib/ui";
 
 export type StoreLayoutContext = {
     store: Store;
@@ -80,7 +81,7 @@ function StoreCatalogLayout({ storeId }: { storeId: string | undefined }) {
         
     if (loading) {
         return (
-            <main className="management-page">
+            <main className="owner-page">
                 <Throbber 
                     label="Загрузка магазина..."
                     className="min-h-[50vh]"
@@ -91,12 +92,14 @@ function StoreCatalogLayout({ storeId }: { storeId: string | undefined }) {
 
     if (!store) {
         return (
-            <main className="management-page">
-                <p>{error || "Магазин не найден."}</p>
-
-                <button onClick={() => void loadCatalog()}>
-                    Повторить
-                </button>
+            <main className="owner-page">
+                <section className="store-section">
+                    <h1 className={ui.title}>Магазин недоступен</h1>
+                    <p role="alert">{error || "Магазин не найден."}</p>
+                    <button className={ui.button} onClick={() => void loadCatalog()}>
+                        Повторить
+                    </button>
+                </section>
             </main>
         )
     }

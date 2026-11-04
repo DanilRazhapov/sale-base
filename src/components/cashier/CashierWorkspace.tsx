@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalError, terminalRequest } from "../../lib/cashierTerminal";
 import type { TerminalSnapshot } from "../../lib/cashierCart";
 import { CashierPOS } from "./CashierPOS";
+
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Не удалось выполнить операцию.");
 
 export function CashierWorkspace({ token, onLogout }: { token: string; onLogout: () => void }) {
@@ -90,11 +91,15 @@ export function CashierWorkspace({ token, onLogout }: { token: string; onLogout:
                     notice={notice}
                 />
             ) : (
-                <div className="mx-auto mt-[15vh] max-w-lg text-center [&_h1]:mb-4 [&_button]:m-2">
-                    <h1 className={ui.title}>Рабочее место кассира</h1>
+                <section className="pos-loading">
+                    <span className="brand-mark" aria-hidden="true" />
+                    <p className="pos-eyebrow">SaleBase / Касса</p>
+                    <h1 className={ui.title}>Торговая станция</h1>
                     {error ? (
                         <>
-                            <p role="alert">{error}</p>
+                            <p className={ui.error} role="alert">
+                                {error}
+                            </p>
                             <button className={ui.button} onClick={() => void load()}>
                                 Повторить
                             </button>
@@ -117,7 +122,7 @@ export function CashierWorkspace({ token, onLogout }: { token: string; onLogout:
                     ) : (
                         <p role="status">Загрузка товаров и смены…</p>
                     )}
-                </div>
+                </section>
             )}
         </main>
     );

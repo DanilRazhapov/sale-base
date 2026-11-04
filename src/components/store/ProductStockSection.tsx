@@ -36,46 +36,47 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
 
     return (
         <section className="store-section">
-                <h2 className={ui.heading}>Остатки товаров</h2>
-                <div className="flex flex-wrap items-end gap-4">
-                    <label className={ui.label}>
-                        Поиск
-                        <input
-                            className={ui.input}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Название товара"
-                        />
-                    </label>
-                    <label className={ui.label}>
-                        Категория
-                        <select
-                            className={ui.input}
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
-                        >
-                            <option value="">Все категории</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <div className={ui.label}>
-                        Порог для заказа
-                        <span className="text-sm font-normal">5 шт · 1 кг · 10 л</span>
-                    </div>
-                    <label className="flex cursor-pointer flex-row items-center gap-2 text-sm font-medium">
-                        <input
-                            className={ui.checkbox}
-                            type="checkbox"
-                            checked={lowOnly}
-                            onChange={(e) => setLowOnly(e.target.checked)}
-                        />
-                        Только остаток ≤ порога
-                    </label>
+            <h2 className={ui.heading}>Остатки товаров</h2>
+            <div className="stock-filters">
+                <label className={ui.label}>
+                    Поиск
+                    <input
+                        className={ui.input}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Название товара"
+                    />
+                </label>
+                <label className={ui.label}>
+                    Категория
+                    <select
+                        className={ui.input}
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                    >
+                        <option value="">Все категории</option>
+                        {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <div className={ui.label}>
+                    Порог для заказа
+                    <span className="text-sm font-normal">5 шт · 1 кг · 10 л</span>
                 </div>
+                <label className="flex cursor-pointer flex-row items-center gap-2 text-sm font-medium">
+                    <input
+                        className={ui.checkbox}
+                        type="checkbox"
+                        checked={lowOnly}
+                        onChange={(e) => setLowOnly(e.target.checked)}
+                    />
+                    Только остаток ≤ порога
+                </label>
+            </div>
+            {visibleProducts.length > 0 ? (
                 <div className="table-scroll">
                     <table>
                         <thead>
@@ -90,7 +91,10 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
                         </thead>
                         <tbody>
                             {visibleProducts.map((product) => (
-                                <tr key={product.id} className={`${needsCriticalRestock(product) ? "stock-critical" : ""} ${needsRestock(product) ? "stock-warning" : ""}`.trim()}>
+                                <tr
+                                    key={product.id}
+                                    className={`${needsCriticalRestock(product) ? "stock-critical" : ""} ${needsRestock(product) ? "stock-warning" : ""}`.trim()}
+                                >
                                     <td className="align-middle">{product.name}</td>
                                     <td className="align-middle">
                                         {categories.find((category) => category.id === product.category_id)?.name ??
@@ -116,7 +120,9 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
                         </tbody>
                     </table>
                 </div>
-                {!visibleProducts.length && <p>Товары не найдены.</p>}
-            </section>
-    )
+            ) : (
+                <p className="store-empty-row">Товары не найдены.</p>
+            )}
+        </section>
+    );
 }

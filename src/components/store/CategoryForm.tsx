@@ -29,9 +29,9 @@ export function CategoryForm({ storeId, categories, busy, runAction }: Props) {
     return (
         <section className="store-section">
             <h2 className={ui.heading}>Категории</h2>
-            <ul className="my-4 space-y-2">
+            <ul className="category-list">
                 {categories.map((category) => (
-                    <li key={category.id} className="flex items-center justify-between gap-3">
+                    <li key={category.id}>
                         <span>{category.name}</span>
                         <button
                             className={ui.button}

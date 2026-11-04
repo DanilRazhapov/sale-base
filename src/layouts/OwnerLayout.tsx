@@ -46,6 +46,7 @@ export function OwnerLayout() {
 
     useLayoutEffect(() => {
         content.current?.scrollTo(0, 0);
+        window.scrollTo(0, 0);
     }, [pathname]);
 
     useEffect(() => {
@@ -110,7 +111,63 @@ export function OwnerLayout() {
 
     return (
         <div className="owner-layout">
+            <aside className="owner-sidebar">
+                <Link className="owner-wordmark" to="/" aria-label="SaleBase, главная">
+                    <span className="brand-mark" aria-hidden="true" />
+                    <span>
+                        <strong>SaleBase</strong>
+                        <small>Торговая станция</small>
+                    </span>
+                </Link>
+                <nav aria-label="Навигация кабинета">
+                    <div className="owner-nav-group">
+                        <span className="owner-nav-label">Кабинет</span>
+                        <NavLink to="/" end>
+                            <span aria-hidden="true">⌂</span>Главная
+                        </NavLink>
+                    </div>
+                    <div className="owner-nav-group">
+                        <span className="owner-nav-label">Магазин</span>
+                        {storePath ? (
+                            <>
+                                <NavLink to={storePath} end>
+                                    <span aria-hidden="true">◫</span>Обзор
+                                </NavLink>
+                                <NavLink to={`${storePath}/inventory`} end>
+                                    <span aria-hidden="true">▦</span>Товары
+                                </NavLink>
+                                <NavLink to={`${storePath}/stock`} end>
+                                    <span aria-hidden="true">≡</span>Остатки
+                                </NavLink>
+                            </>
+                        ) : (
+                            <>
+                                <span aria-disabled="true">
+                                    <span aria-hidden="true">◫</span>Обзор
+                                </span>
+                                <span aria-disabled="true">
+                                    <span aria-hidden="true">▦</span>Товары
+                                </span>
+                                <span aria-disabled="true">
+                                    <span aria-hidden="true">≡</span>Остатки
+                                </span>
+                            </>
+                        )}
+                    </div>
+                    <div className="owner-nav-group">
+                        <span className="owner-nav-label">Добавить</span>
+                        <NavLink to="/store/new" end>
+                            <span aria-hidden="true">+</span>Новый магазин
+                        </NavLink>
+                        <NavLink to="/cashier/new" end>
+                            <span aria-hidden="true">+</span>Новый кассир
+                        </NavLink>
+                    </div>
+                </nav>
+                <span className="owner-sidebar-caption">Рабочее пространство</span>
+            </aside>
             <header className="owner-header">
+                <span className="owner-header-label">Кабинет владельца</span>
                 <details
                     className="owner-store-picker"
                     ref={storeMenu}
@@ -127,8 +184,13 @@ export function OwnerLayout() {
                     }}
                 >
                     <summary>
+                        <span className="owner-picker-icon" aria-hidden="true">
+                            ◫
+                        </span>
                         <span className="truncate">{selectedStore?.name ?? "Выбрать магазин"}</span>
-                        <span className="owner-store-chevron" aria-hidden="true">▾</span>
+                        <span className="owner-menu-chevron" aria-hidden="true">
+                            ⌄
+                        </span>
                     </summary>
                     <div className="owner-store-menu" aria-label="Выбор магазина">
                         {storeList.isLoadingStores && <p role="status">Загружаем магазины…</p>}
@@ -168,9 +230,14 @@ export function OwnerLayout() {
                         }
                     }}
                 >
-                    <summary>
-                        <span className="truncate">{accountName}</span>
-                        <span aria-hidden="true">▾</span>
+                    <summary aria-label={accountName}>
+                        <span className="owner-account-initial" aria-hidden="true">
+                            {accountName.slice(0, 1).toLocaleUpperCase()}
+                        </span>
+                        <span className="owner-account-name truncate">{accountName}</span>
+                        <span className="owner-menu-chevron" aria-hidden="true">
+                            ⌄
+                        </span>
                     </summary>
                     <div className="owner-account-menu">
                         {user?.email && user.email !== accountName && <p>{user.email}</p>}
@@ -186,34 +253,20 @@ export function OwnerLayout() {
                         >
                             {isSigningOut ? "Выходим…" : "Выйти из аккаунта"}
                         </button>
-                        {signOutError && <p className="text-danger" role="alert">{signOutError}</p>}
+                        {signOutError && (
+                            <p className="text-danger" role="alert">
+                                {signOutError}
+                            </p>
+                        )}
                     </div>
                 </details>
             </header>
-            <div className="owner-body">
-                <aside className="owner-sidebar">
-                    <nav aria-label="Навигация кабинета">
-                        <NavLink to="/" end>Главная</NavLink>
-                        {storePath && (
-                            <>
-                                <NavLink to={`${storePath}/inventory`} end>Товары</NavLink>
-                                <NavLink to={`${storePath}/stock`} end>Остатки</NavLink>
-                            </>
-                        )}
-                        {!storePath && (
-                            <>
-                                <span aria-disabled="true">Товары</span>
-                                <span aria-disabled="true">Остатки</span>
-                            </>
-                        )}
-                        <NavLink to="/store/new" end>Создать магазин</NavLink>
-                        <NavLink to="/cashier/new" end>Создать кассира</NavLink>
-                    </nav>
-                </aside>
-                <div className="owner-content" ref={content}>
-                    <Outlet context={{ ...storeList, selectedStoreId: selectedStore?.id } satisfies OwnerLayoutContext} />
-                    <footer className="owner-footer">Creator Danil Razhapov</footer>
-                </div>
+            <div className="owner-content" ref={content}>
+                <Outlet context={{ ...storeList, selectedStoreId: selectedStore?.id } satisfies OwnerLayoutContext} />
+                <footer className="owner-footer">
+                    <span>SaleBase</span>
+                    <span>Creator Danil Razhapov</span>
+                </footer>
             </div>
         </div>
     );

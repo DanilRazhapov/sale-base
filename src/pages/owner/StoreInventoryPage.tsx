@@ -68,20 +68,18 @@ export default function StoreInventoryPage() {
     }
 
     const editing = products.find((product) => product.id === productId) ?? null;
+    const filteredProducts = products.filter((product) =>
+        product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+    );
 
     return (
-        <main className="management-page !max-w-[1600px]">
+        <main className="owner-page store-page">
             <StoreHeader
-                backTo={`/store/${storeId}`}
-                backLabel="Вернуться в магазин"
-                title="Управление товарами"
-                description="Создавайте категории и обновляйте товары, чтобы управлять ассортиментом вашего магазина."
+                store={store}
+                title="Каталог товаров"
+                description="Управляйте ассортиментом, ценами и категориями."
             >
-                <button
-                    className={ui.button}
-                    disabled={busy}
-                    onClick={() => void reloadCatalog()}
-                >
+                <button className={ui.button} disabled={busy} onClick={() => void reloadCatalog()}>
                     Обновить данные
                 </button>
             </StoreHeader>
@@ -95,11 +93,11 @@ export default function StoreInventoryPage() {
                     {notice}
                 </p>
             )}
-            <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
+            <div className="inventory-workspace">
                 <section className="inventory-catalog">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="inventory-toolbar">
                         <h2 className={ui.heading}>
-                            Товары <span className="text-muted">{products.length}</span>
+                            Товары <span className="store-count">{products.length}</span>
                         </h2>
                         <button className={ui.button} disabled={busy} onClick={resetProductEditor}>
                             + Добавить
@@ -114,37 +112,37 @@ export default function StoreInventoryPage() {
                             placeholder="Название товара"
                         />
                     </label>
-                    <div className="mt-4 max-h-[65vh] space-y-2 overflow-y-auto">
-                        {products
-                            .filter((product) => product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
-                            .map((product) => (
-                                <button
-                                    key={product.id}
-                                    disabled={busy}
-                                    aria-pressed={product.id === productId}
-                                    className="inventory-product"
-                                    onClick={() =>
-                                        setSearchParams((current) => {
-                                            const next = new URLSearchParams(current);
-                                            next.set("product", product.id);
-                                            return next;
-                                        })
-                                    }
-                                >
-                                    <strong className="block break-words">{product.name}</strong>
-                                    <span className="mt-1 block text-sm text-muted">
+                    <div className="inventory-products">
+                        {filteredProducts.map((product) => (
+                            <button
+                                key={product.id}
+                                disabled={busy}
+                                aria-pressed={product.id === productId}
+                                className="inventory-product"
+                                onClick={() =>
+                                    setSearchParams((current) => {
+                                        const next = new URLSearchParams(current);
+                                        next.set("product", product.id);
+                                        return next;
+                                    })
+                                }
+                            >
+                                <span className="inventory-product-copy">
+                                    <strong>{product.name}</strong>
+                                    <small>
                                         {product.stock ?? 0} {product.unit ?? "шт"} ·{" "}
                                         {Number(product.price ?? 0).toLocaleString("ru-RU")} за {product.unit ?? "шт"}
-                                    </span>
-                                </button>
-                            ))}
+                                    </small>
+                                </span>
+                                <span aria-hidden="true">↗</span>
+                            </button>
+                        ))}
                         {!products.length && (
                             <p className="py-6 text-sm text-muted">Добавьте первый товар через форму.</p>
                         )}
-                        {!!products.length &&
-                            !products.some((product) =>
-                                product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
-                            ) && <p className="py-6 text-sm text-muted">Товары не найдены.</p>}
+                        {products.length > 0 && filteredProducts.length === 0 && (
+                            <p className="py-6 text-sm text-muted">Товары не найдены.</p>
+                        )}
                     </div>
                 </section>
                 {productId !== null && !editing ? (
@@ -166,7 +164,7 @@ export default function StoreInventoryPage() {
                     />
                 )}
             </div>
-            <div className="grid items-start gap-6 lg:grid-cols-2">
+            <div className="inventory-workspace inventory-tools">
                 <CategoryForm storeId={storeId} categories={categories} busy={busy} runAction={run} />
                 <OwnerMovementForm storeId={storeId} products={products} busy={busy} runAction={run} />
             </div>

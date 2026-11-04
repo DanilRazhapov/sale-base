@@ -23,7 +23,8 @@ function AppRoutes() {
     if (loading)
         return (
             <div className="session-loading" role="status">
-                Загрузка…
+                <span className="brand-mark" aria-hidden="true" />
+                <span>Загрузка…</span>
             </div>
         );
     return (

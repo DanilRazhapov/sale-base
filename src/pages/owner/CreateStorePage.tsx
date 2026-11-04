@@ -75,20 +75,17 @@ const CreateStorePage = () => {
     }
 
     return (
-        <main className={ui.page}>
-            <div className="mx-auto max-w-7xl px-8 pb-12 max-lg:px-6 max-md:px-4 max-md:pb-8">
-                <div className="page-intro">
+        <main className="owner-page">
+            <div>
+                <header className="store-page-heading owner-form-heading">
                     <div>
-                        <span className={ui.eyebrow}>КАБИНЕТ ВЛАДЕЛЬЦА</span>
+                        <span className="owner-kicker">Магазины / Создание</span>
                         <h1 className={ui.title}>Новый магазин</h1>
                         <p>Начните с названия и адреса. Товары, категории и кассиров можно добавить следующим шагом.</p>
                     </div>
-                </div>
-                <div className="grid max-w-5xl grid-cols-[minmax(0,1.45fr)_minmax(280px,1fr)] items-start gap-7 max-lg:gap-5 max-md:grid-cols-1">
-                    <section
-                        className="store-create-form"
-                        aria-labelledby="store-details-title"
-                    >
+                </header>
+                <div className="owner-form-layout">
+                    <section className="store-create-form" aria-labelledby="store-details-title">
                         <div className="mb-7 flex items-center gap-4 [&_h2]:text-xl [&_h2]:tracking-tight [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted">
                             <span className="icon-tile" aria-hidden="true">
                                 ▦
@@ -150,13 +147,7 @@ const CreateStorePage = () => {
                                     >
                                         Отмена
                                     </button>
-                                    <button
-                                        className={
-                                            ui.buttonBase +
-                                            " button-link-primary"
-                                        }
-                                        type="submit"
-                                    >
+                                    <button className={ui.buttonBase + " button-link-primary"} type="submit">
                                         {isSubmitting ? "Создаём магазин…" : "Создать магазин"}
                                         <span aria-hidden="true">→</span>
                                     </button>
@@ -164,7 +155,7 @@ const CreateStorePage = () => {
                             </fieldset>
                         </form>
                     </section>
-                    <aside className="min-w-0">
+                    <aside className="owner-form-aside">
                         <span className={ui.eyebrow}>ПРЕДПРОСМОТР</span>
                         <p className="mt-2 mb-4 text-xs text-muted">Так магазин будет выглядеть в вашем списке.</p>
                         <article className="store-preview">
@@ -172,9 +163,7 @@ const CreateStorePage = () => {
                                 <span className="icon-tile" aria-hidden="true">
                                     ▦
                                 </span>
-                                <span className="store-preview-badge">
-                                    Новый магазин
-                                </span>
+                                <span className="store-preview-badge">Новый магазин</span>
                             </div>
                             <h3 className={ui.subheading}>{name.trim() || "Название магазина"}</h3>
                             <p>{address.trim() || "Здесь появится адрес"}</p>

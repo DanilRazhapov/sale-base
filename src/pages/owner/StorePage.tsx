@@ -154,17 +154,9 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
     const cashierName = (id: string) => cashiers.find((cashier) => cashier.id === id)?.name ?? "Кассир недоступен";
 
     return (
-        <main className="management-page">
-            <StoreHeader
-                backTo="/"
-                backLabel="На главную"
-                title={store.name}
-                description={store.address || undefined}
-            >
-                <button
-                    className={ui.button}
-                    onClick={() => void load()}
-                >
+        <main className="owner-page store-page">
+            <StoreHeader store={store} title={store.name} description={store.address || undefined}>
+                <button className={ui.button} onClick={() => void load()}>
                     Обновить данные
                 </button>
             </StoreHeader>
@@ -173,7 +165,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                     {error}
                 </p>
             )}
-            <div className="store-statistics">
+            <section className="store-statistics" aria-label="Показатели магазина">
                 <article>
                     <span>Товаров</span>
                     <strong>{products.length}</strong>
@@ -190,10 +182,15 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                     <span>Выручка открытой смены</span>
                     <strong>{money(revenue)}</strong>
                 </article>
-            </div>
+            </section>
 
             <section className="store-section">
-                <h2 className={ui.heading}>Смена и касса</h2>
+                <div className="store-section-heading">
+                    <h2 className={ui.heading}>Смена и касса</h2>
+                    <span className={`store-status${activeShift ? " is-active" : ""}`}>
+                        {activeShift ? "Смена открыта" : "Нет открытой смены"}
+                    </span>
+                </div>
                 <p>Смену открывает и закрывает кассир на рабочем планшете. Здесь отображаются данные смены.</p>
                 {activeShift ? (
                     <>
@@ -211,9 +208,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                             <p>Эта смена была открыта владельцем до перехода на рабочее место кассира.</p>
                         )}
                     </>
-                ) : (
-                    <p>Открытой смены нет.</p>
-                )}
+                ) : null}
                 {!!shifts.filter((shift) => shift.closed_at).length && (
                     <details>
                         <summary>Последние закрытые смены</summary>
@@ -240,9 +235,17 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                                                 <td>{money(Number(shift.opening_cash))}</td>
                                                 <td>{date(shift.closed_at)}</td>
                                                 <td>{money(Number(shift.expected_cash))}</td>
-                                                <td>{shift.closing_cash === null ? "Автозакрытие · не пересчитано" : money(Number(shift.closing_cash))}</td>
                                                 <td>
-                                                    {shift.closing_cash === null ? "—" : money(Number(shift.closing_cash) - Number(shift.expected_cash))}
+                                                    {shift.closing_cash === null
+                                                        ? "Автозакрытие · не пересчитано"
+                                                        : money(Number(shift.closing_cash))}
+                                                </td>
+                                                <td>
+                                                    {shift.closing_cash === null
+                                                        ? "—"
+                                                        : money(
+                                                              Number(shift.closing_cash) - Number(shift.expected_cash),
+                                                          )}
                                                 </td>
                                             </tr>
                                         ))}
@@ -254,90 +257,102 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
             </section>
 
             <section className="store-section">
-                <h2 className={ui.heading}>Кассиры</h2>
-                <div className="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Кассир</th>
-                                <th>Статус</th>
-                                <th>Действие</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {cashiers.map((cashier) => (
-                                <tr key={cashier.id}>
-                                    <td className="align-middle">{cashier.name}</td>
-                                    <td className="align-middle">{cashier.is_active ? "Активен" : "Отключён"}</td>
-                                    <td className="align-middle">
-                                        <button
-                                            className={`${ui.button} hover:bg-danger-soft`}
-                                            disabled={cashierBusy}
-                                            onClick={() => void toggleCashier(cashier)}
-                                        >
-                                            {cashier.is_active ? "Заблокировать" : "Разблокировать"}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="store-section-heading">
+                    <h2 className={ui.heading}>Кассиры</h2>
+                    <Link className="button-secondary" to="/cashier/new">
+                        Новый кассир
+                    </Link>
                 </div>
-                {!cashiers.length && (
-                    <p>
-                        <Link to="/cashier/new">Создать кассира</Link>
-                    </p>
+                {cashiers.length > 0 ? (
+                    <div className="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Кассир</th>
+                                    <th>Статус</th>
+                                    <th>Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {cashiers.map((cashier) => (
+                                    <tr key={cashier.id}>
+                                        <td className="align-middle">{cashier.name}</td>
+                                        <td className="align-middle">
+                                            <span className={`store-status${cashier.is_active ? " is-active" : ""}`}>
+                                                {cashier.is_active ? "Активен" : "Отключён"}
+                                            </span>
+                                        </td>
+                                        <td className="align-middle">
+                                            <button
+                                                className={`${ui.button} hover:bg-danger-soft`}
+                                                disabled={cashierBusy}
+                                                onClick={() => void toggleCashier(cashier)}
+                                            >
+                                                {cashier.is_active ? "Заблокировать" : "Разблокировать"}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="store-empty-row">Кассиры пока не добавлены.</p>
                 )}
             </section>
 
             <section className="store-section">
                 <h2 className={ui.heading}>Последние 30 движений</h2>
-                <div className="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Время</th>
-                                <th>Товар</th>
-                                <th>Операция</th>
-                                <th>Кто выполнил</th>
-                                <th>Количество</th>
-                                <th>Сумма продажи</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {movements.map((item) => (
-                                <tr key={item.id}>
-                                    <td>{date(item.created_at)}</td>
-                                    <td>
-                                        {products.find((product) => product.id === item.product_id)?.name ??
-                                            item.product_id}
-                                    </td>
-                                    <td>{item.note || item.movement_type}</td>
-                                    <td title={item.created_by ?? item.cashier_id ?? undefined}>
-                                        {item.cashier_id
-                                            ? cashierName(item.cashier_id)
-                                            : item.created_by
-                                              ? `Владелец · ${item.created_by.slice(0, 8)}`
-                                              : "Автор не записан (старое движение)"}
-                                    </td>
-                                    <td>
-                                        {item.direction > 0 ? "+" : "−"}
-                                        {item.quantity}
-                                    </td>
-                                    <td>
-                                        {item.price_at_time !== null
-                                            ? money(
-                                                  Math.round(Number(item.price_at_time) * Number(item.quantity) * 100) /
-                                                      100,
-                                              )
-                                            : "—"}
-                                    </td>
+                {movements.length > 0 ? (
+                    <div className="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Время</th>
+                                    <th>Товар</th>
+                                    <th>Операция</th>
+                                    <th>Кто выполнил</th>
+                                    <th>Количество</th>
+                                    <th>Сумма продажи</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                {!movements.length && <p>Операций пока нет.</p>}
+                            </thead>
+                            <tbody>
+                                {movements.map((item) => (
+                                    <tr key={item.id}>
+                                        <td>{date(item.created_at)}</td>
+                                        <td>
+                                            {products.find((product) => product.id === item.product_id)?.name ??
+                                                item.product_id}
+                                        </td>
+                                        <td>{item.note || item.movement_type}</td>
+                                        <td title={item.created_by ?? item.cashier_id ?? undefined}>
+                                            {item.cashier_id
+                                                ? cashierName(item.cashier_id)
+                                                : item.created_by
+                                                  ? `Владелец · ${item.created_by.slice(0, 8)}`
+                                                  : "Автор не записан (старое движение)"}
+                                        </td>
+                                        <td>
+                                            {item.direction > 0 ? "+" : "−"}
+                                            {item.quantity}
+                                        </td>
+                                        <td>
+                                            {item.price_at_time !== null
+                                                ? money(
+                                                      Math.round(
+                                                          Number(item.price_at_time) * Number(item.quantity) * 100,
+                                                      ) / 100,
+                                                  )
+                                                : "—"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="store-empty-row">Операций пока нет.</p>
+                )}
             </section>
         </main>
     );

@@ -3,6 +3,13 @@ import { money, kindName } from "../../lib/cashierFormat";
 import type { CashierPOSProps } from "./types";
 import type { CashierPOSState } from "./useCashierPOS";
 import { lineCents, quantityMilli, type CartLine } from "../../lib/cashierCart";
+import { PosIcon } from "./PosIcon";
+
+const saveLabel = {
+    sale: "Сохранить продажу",
+    receipt: "Сохранить приход",
+    writeoff: "Сохранить списание",
+};
 
 type Props = Pick<
     CashierPOSState,
@@ -138,13 +145,18 @@ export function CashierCart({
     busy,
 }: Props) {
     return (
-        <aside className={"pos-cart" + (mobileView === "products" ? " max-sm:hidden" : "")} aria-label="Корзина">
+        <aside className="pos-cart" id="pos-cart" data-mobile-hidden={mobileView === "products"} aria-label="Корзина">
             <div className="pos-cart-header">
-                <div>
-                    <span className="pos-eyebrow">{kindName[kind]}</span>
-                    <h2 className={ui.heading}>
-                        Корзина <span>{lines.length}</span>
-                    </h2>
+                <div className="pos-panel-title">
+                    <span className="pos-panel-icon">
+                        <PosIcon name="basket" />
+                    </span>
+                    <div>
+                        <span className="pos-eyebrow">{kindName[kind]}</span>
+                        <h2 className={ui.heading}>
+                            Корзина <span>{lines.length}</span>
+                        </h2>
+                    </div>
                 </div>
                 <button
                     className={ui.buttonBase + " button-soft-danger"}
@@ -156,10 +168,12 @@ export function CashierCart({
             </div>
             <div className="pos-cart-lines">
                 {!lines.length ? (
-                    <div className="empty-state">
-                        <span className="pos-empty-icon">＋</span>
+                    <div className="empty-state pos-empty-state">
+                        <span className="pos-empty-icon">
+                            <PosIcon name="basket" />
+                        </span>
                         <strong>Корзина пуста</strong>
-                        <p>Нажмите на товар слева, чтобы добавить его.</p>
+                        <p>Выберите товар в каталоге, чтобы добавить его в корзину.</p>
                     </div>
                 ) : (
                     lines.map((line) => (
@@ -172,7 +186,7 @@ export function CashierCart({
                                     onClick={() => remove(line.product_id)}
                                     aria-label={`Удалить ${line.name}`}
                                 >
-                                    ✕
+                                    <PosIcon name="close" />
                                 </button>
                             </div>
                             <p>
@@ -223,18 +237,21 @@ export function CashierCart({
                     </p>
                 )}
                 {storageError && (
-                    <p role="alert">Браузер не сохранил черновик. Не закрывайте страницу до подтверждения операции.</p>
+                    <p className="pos-pending" role="alert">
+                        Браузер не сохранил черновик. Не закрывайте страницу до подтверждения операции.
+                    </p>
                 )}
                 <div className="pos-total">
                     <span>{kind === "sale" ? "К оплате" : "Стоимость товаров"}</span>
                     <strong>{money(total)}</strong>
                 </div>
                 <button
-                    className={ui.buttonBase + " button-primary"}
+                    className={ui.buttonBase + " pos-checkout"}
                     disabled={busy || (!pending && (!ownShift || !lines.length || issues.length > 0))}
                     onClick={save}
                 >
-                    {busy ? "Сохранение…" : pending ? "Повторить сохранение" : "Сохранить"}
+                    {busy ? "Сохранение…" : pending ? "Повторить сохранение" : saveLabel[kind]}
+                    <PosIcon name="arrow" />
                 </button>
                 <p className="pos-checkout-hint">
                     {kind === "sale"

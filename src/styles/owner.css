@@ -1,98 +1,495 @@
 @layer components {
   #root:has(> .owner-layout) {
-    @apply flex h-dvh flex-col;
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
   }
+
   .owner-layout {
-    @apply flex min-h-0 flex-1 flex-col bg-canvas;
+    display: grid;
+    flex: 1;
+    grid-template:
+      "sidebar header" auto
+      "sidebar content" minmax(0, 1fr) / 14rem minmax(0, 1fr);
+    background: var(--canvas);
   }
-  .owner-header {
-    @apply relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4 max-sm:px-3;
-  }
-  .owner-body {
-    @apply grid min-h-0 flex-1 grid-cols-[12rem_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)];
-  }
+
   .owner-sidebar {
-    @apply overflow-y-auto border-r border-line bg-surface p-3 max-md:max-h-[40dvh] max-md:border-r-0 max-md:border-b;
+    grid-area: sidebar;
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100dvh;
+    flex-direction: column;
+    gap: 1.8rem;
+    padding: 1.25rem 0.85rem;
+    overflow: auto;
+    background: var(--navy-deep);
+    color: #f7f3e9;
   }
+
+  .owner-wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem;
+    line-height: 1.1;
+  }
+
+  .owner-wordmark strong,
+  .owner-wordmark small {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .owner-wordmark strong {
+    font-size: 1.35rem;
+    letter-spacing: -0.04em;
+  }
+
+  .owner-wordmark small {
+    margin-top: 0.3rem;
+    color: #bdc7d9;
+    font-size: 0.69rem;
+  }
+
+  .owner-sidebar nav,
+  .owner-nav-group {
+    display: flex;
+    flex-direction: column;
+  }
+
   .owner-sidebar nav {
-    @apply flex flex-col gap-1 max-md:flex-row max-md:flex-wrap;
+    gap: 1.5rem;
   }
-  .owner-sidebar a {
-    @apply rounded-lg px-3 py-2.5 text-sm font-semibold text-muted hover:bg-surface-soft aria-[current=page]:bg-brand-soft aria-[current=page]:text-brand;
+
+  .owner-nav-group {
+    gap: 0.25rem;
   }
-  .owner-sidebar span[aria-disabled="true"] {
-    @apply cursor-default rounded-lg px-3 py-2.5 text-sm font-semibold text-muted opacity-60;
+
+  .owner-nav-label,
+  .owner-sidebar-caption,
+  .owner-kicker {
+    font: 700 0.7rem/1.3 var(--font-mono);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
   }
+
+  .owner-nav-label {
+    padding: 0 0.65rem 0.35rem;
+    color: #aebbd3;
+  }
+
+  .owner-nav-group > a,
+  .owner-nav-group > [aria-disabled] {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .owner-nav-group [aria-hidden] {
+    width: 1.15rem;
+    color: var(--amber);
+    font-size: 1.05rem;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .owner-nav-group > a:hover {
+    background: #ffffff12;
+  }
+
+  .owner-nav-group > a[aria-current="page"] {
+    border-color: #ffad6b55;
+    background: #ffad6b1c;
+    color: var(--amber);
+  }
+
+  .owner-nav-group > [aria-disabled] {
+    color: #aebbd3;
+  }
+
+  .owner-nav-group > [aria-disabled] [aria-hidden] {
+    color: inherit;
+  }
+
+  .owner-sidebar :focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: -2px;
+  }
+
+  .owner-sidebar-caption {
+    margin-top: auto;
+    padding: 0.9rem 0.65rem 0;
+    border-top: 1px solid #ffffff26;
+    color: #aebbd3;
+  }
+
+  .owner-header {
+    grid-area: header;
+    z-index: 2;
+    display: flex;
+    min-width: 0;
+    min-height: 4.65rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem clamp(1rem, 3vw, 2.75rem);
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .owner-header-label {
+    margin-right: auto;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 650;
+  }
+
   .owner-content {
-    @apply flex min-h-0 min-w-0 flex-col overflow-auto;
+    grid-area: content;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
   }
+
   .owner-content > main {
-    @apply min-h-auto w-full flex-1;
+    width: 100%;
+    min-height: auto;
+    flex: 1;
   }
+
   .owner-account,
   .owner-store-picker {
-    @apply relative min-w-0 max-w-64;
+    position: relative;
+    min-width: 0;
+    max-width: 17rem;
   }
+
   .owner-account summary,
   .owner-store-picker summary {
-    @apply flex cursor-pointer list-none items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm font-semibold hover:bg-surface-soft;
+    @apply flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface-soft;
   }
+
   .owner-account summary::-webkit-details-marker,
   .owner-store-picker summary::-webkit-details-marker {
     display: none;
   }
+
   .owner-store-picker summary {
     @apply border-brand-line bg-brand-soft text-brand;
   }
-  .owner-store-chevron {
-    @apply shrink-0 transition-transform duration-200 motion-reduce:transition-none;
+
+  .owner-account-initial {
+    display: grid;
+    width: 1.65rem;
+    height: 1.65rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.75rem;
   }
-  .owner-store-picker[open] .owner-store-chevron {
-    @apply rotate-180;
+
+  .owner-picker-icon,
+  .owner-menu-chevron {
+    flex: 0 0 auto;
   }
+
+  .owner-store-picker[open] .owner-menu-chevron,
+  .owner-account[open] .owner-menu-chevron {
+    rotate: 180deg;
+  }
+
+  .owner-store-menu,
+  .owner-account-menu {
+    @apply absolute top-full z-10 mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-1 rounded-xl border border-line bg-surface p-2 shadow-card;
+  }
+
   .owner-store-menu {
-    @apply absolute top-full left-0 mt-2 grid max-h-[min(24rem,60dvh)] w-72 max-w-[calc(100vw-1.5rem)] gap-1 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg;
+    @apply left-0 max-h-[min(24rem,55dvh)] overflow-y-auto;
   }
-  .owner-store-picker[open] .owner-store-menu {
-    @media (prefers-reduced-motion: no-preference) {
-      animation: owner-store-drop 180ms ease-out;
-    }
+
+  .owner-account-menu {
+    right: 0;
   }
+
   .owner-store-menu a,
-  .owner-store-menu p {
-    @apply rounded-lg px-3 py-2.5 text-sm wrap-anywhere;
+  .owner-store-menu p,
+  .owner-account-menu a,
+  .owner-account-menu button {
+    @apply rounded-lg px-3 py-2.5 text-left text-sm wrap-anywhere;
   }
+
   .owner-store-menu a {
     @apply hover:bg-surface-soft aria-[current=true]:bg-brand-soft aria-[current=true]:text-brand;
   }
-  .owner-store-menu p {
-    @apply text-muted;
+
+  .owner-store-menu p,
+  .owner-account-menu a[aria-disabled="true"],
+  .owner-account-menu button[aria-disabled="true"] {
+    @apply cursor-default text-muted;
   }
-  .owner-account-menu {
-    @apply absolute top-full right-0 mt-2 grid w-64 max-w-[calc(100vw-1.5rem)] gap-1 rounded-xl border border-line bg-surface p-2 shadow-lg;
-  }
+
   .owner-account-menu p {
     @apply px-3 py-2 text-xs wrap-anywhere;
   }
-  .owner-account-menu a,
-  .owner-account-menu button {
-    @apply rounded-lg px-3 py-2.5 text-left text-sm aria-disabled:cursor-default aria-disabled:text-muted;
-  }
+
   .owner-account-menu button:not([aria-disabled="true"]) {
     @apply cursor-pointer hover:bg-surface-soft;
   }
-  .owner-footer {
-    @apply shrink-0 border-t border-line bg-surface px-6 py-4 text-center text-sm text-muted;
-  }
-}
 
-@keyframes owner-store-drop {
-  from {
-    opacity: 0;
-    transform: translateY(-0.5rem);
+  .owner-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem clamp(1rem, 3vw, 2.75rem);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.75rem;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .owner-footer > :first-child {
+    font-weight: 700;
+  }
+
+  .owner-page {
+    width: 100%;
+    max-width: 100rem;
+    margin-inline: auto;
+    padding: clamp(1rem, 3vw, 2.75rem);
+  }
+
+  .owner-kicker {
+    display: block;
+    color: var(--brand);
+  }
+
+  .home-welcome {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 28%);
+    align-items: center;
+    overflow: hidden;
+    padding: clamp(1.4rem, 4vw, 3.1rem);
+    border-radius: 1rem;
+    background-color: var(--navy);
+    background-image:
+      linear-gradient(#ffffff0c 1px, transparent 1px),
+      linear-gradient(90deg, #ffffff0c 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    color: #fffaf1;
+  }
+
+  .home-welcome .owner-kicker {
+    color: var(--amber);
+  }
+
+  .home-welcome h1 {
+    margin: 0.75rem 0;
+    font-size: clamp(2rem, 5vw, 4.65rem);
+    font-weight: 760;
+    letter-spacing: -0.075em;
+    line-height: 1.03;
+  }
+
+  .home-welcome p {
+    max-width: 32rem;
+    margin-bottom: 1.4rem;
+    color: #d5dce8;
+    overflow-wrap: anywhere;
+  }
+
+  .home-welcome .button-link-primary {
+    border-color: var(--amber);
+    background: var(--amber);
+    color: var(--navy-deep);
+  }
+
+  .home-welcome .button-link-primary:hover {
+    background: #ffc795;
+  }
+
+  .home-welcome .button-link-primary:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 4px;
+  }
+
+  .home-welcome-art {
+    display: grid;
+    place-items: center;
+    color: var(--amber);
+  }
+
+  .home-welcome-art svg {
+    width: min(100%, 15rem);
+    stroke: currentColor;
+    stroke-width: 1;
+  }
+
+  .home-welcome-art circle {
+    fill: var(--navy);
+    stroke-width: 2;
+  }
+
+  .home-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(14rem, 1fr);
+    gap: clamp(1.25rem, 3vw, 2rem);
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .home-section-heading {
+    display: flex;
+    min-height: 2.4rem;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .home-section-heading h2 {
+    font-size: clamp(1.2rem, 2vw, 1.65rem);
+    font-weight: 730;
+    letter-spacing: -0.035em;
+  }
+
+  .home-store-list {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .home-store-card,
+  .home-actions > a {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+    background: var(--paper);
+    overflow-wrap: anywhere;
+  }
+
+  .home-store-card:hover,
+  .home-actions > a:hover {
+    border-color: var(--brand-line);
+    background: var(--surface-soft);
+  }
+
+  .home-store-card h3,
+  .home-actions strong {
+    font-weight: 720;
+    letter-spacing: -0.015em;
+  }
+
+  .home-store-card p,
+  .home-actions small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .home-store-arrow,
+  .home-actions > a > :last-child {
+    margin-left: auto;
+    color: var(--brand);
+    font-size: 1.1rem;
+  }
+
+  .home-actions {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .store-count {
+    @apply inline-grid min-w-7 place-items-center rounded-md bg-brand-soft px-2 py-0.5 font-mono text-xs font-bold text-brand;
+  }
+
+  .stores-empty {
+    @apply rounded-xl border border-dashed border-line-strong bg-surface px-6 py-7 text-center text-muted [&>span]:mx-auto [&>span]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-ink [&>p]:mx-auto [&>p]:mt-2 [&>p]:max-w-sm [&>p]:text-sm;
+  }
+
+  @media (min-width: 769px) {
+    #root:has(> .owner-layout) {
+      height: 100dvh;
+    }
+
+    .owner-layout,
+    .owner-content {
+      min-height: 0;
+    }
+
+    .owner-sidebar {
+      position: static;
+      height: auto;
+    }
+
+    .owner-content {
+      overflow: auto;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .home-workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .owner-layout {
+      grid-template:
+        "sidebar" auto
+        "header" auto
+        "content" 1fr / minmax(0, 1fr);
+    }
+
+    .owner-sidebar {
+      position: static;
+      height: auto;
+      gap: 0.5rem;
+      padding: 0.75rem 0.85rem;
+      overflow: hidden;
+    }
+
+    .owner-sidebar nav {
+      flex-direction: row;
+      gap: 0.4rem;
+      overflow-x: auto;
+    }
+
+    .owner-nav-group {
+      flex-direction: row;
+      flex: 0 0 auto;
+    }
+
+    .owner-nav-label,
+    .owner-sidebar-caption,
+    .owner-header-label {
+      display: none;
+    }
+
+    .owner-header {
+      min-height: 3.8rem;
+      justify-content: space-between;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .home-welcome {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .home-welcome-art,
+    .owner-account-name {
+      display: none;
+    }
   }
 }

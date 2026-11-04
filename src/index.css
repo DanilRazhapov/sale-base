@@ -15,16 +15,36 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem 1rem;
-  padding: 0.5rem 1rem;
-  background: var(--brand-soft);
-  color: var(--ink);
+  padding: 0.25rem 1rem;
+  border-block-end: 1px solid #ffffff28;
+  background: var(--navy-deep);
+  color: var(--paper);
   font-size: 0.8rem;
 }
+.pwa-status span:not(:empty)::before {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-inline-end: 0.55rem;
+  border-radius: 50%;
+  background: var(--amber);
+  vertical-align: 0.08em;
+  content: "";
+}
 .pwa-status button {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--brand-hover);
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--amber);
   border-radius: 0.5rem;
+  color: var(--amber);
   cursor: pointer;
+}
+.pwa-status button:hover {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+.pwa-status button:focus-visible {
+  outline-color: var(--amber);
 }
 
 @layer base {
