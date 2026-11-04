@@ -5,7 +5,7 @@ import { AuthContext, cashierStorageKey } from "./session";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [owner, setOwner] = useState<Session | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(navigator.onLine);
     const [cashierToken, setToken] = useState(() => {
         try {
             return sessionStorage.getItem(cashierStorageKey) ?? "";
@@ -18,13 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (token) sessionStorage.setItem(cashierStorageKey, token);
             else sessionStorage.removeItem(cashierStorageKey);
         } catch {
-            /* In-memory sessions still work when browser storage is unavailable. */
+            // Keep the token in memory if browser storage is unavailable.
         }
         setToken(token);
     }, []);
     useEffect(() => {
         let active = true;
         let authChanged = false;
+        // An unavailable session refresh must not prevent the offline app from opening.
+        const offline = () => { if (active) setLoading(false); };
+        window.addEventListener("offline", offline);
         const { data } = supabase.auth.onAuthStateChange((_event, session) => {
             authChanged = true;
             if (active) {
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
         return () => {
             active = false;
+            window.removeEventListener("offline", offline);
             data.subscription.unsubscribe();
         };
     }, []);

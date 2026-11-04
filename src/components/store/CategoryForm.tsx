@@ -29,7 +29,6 @@ export function CategoryForm({ storeId, categories, busy, runAction }: Props) {
     return (
         <section className="store-section">
             <h2 className={ui.heading}>Категории</h2>
-            <p>{categories.map((category) => category.name).join(" · ") || "Категорий пока нет."}</p>
             <ul className="my-4 space-y-2">
                 {categories.map((category) => (
                     <li key={category.id} className="flex items-center justify-between gap-3">

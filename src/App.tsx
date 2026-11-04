@@ -7,12 +7,16 @@ import LoginPage from "./pages/auth/LoginPage";
 import OwnerLoginPage from "./pages/owner/OwnerLoginPage";
 import RegistrationPage from "./pages/owner/RegistrationPage";
 import HomePage from "./pages/owner/HomePage";
-import OwnerPage from "./pages/owner/OwnerPage";
+import { CreateCashierPage } from "./pages/owner/CreateCashierPage";
 import CreateStorePage from "./pages/owner/CreateStorePage";
 import StorePage from "./pages/owner/StorePage";
+import StoreStockPage from "./pages/owner/StoreStockPage";
 import StoreInventoryPage from "./pages/owner/StoreInventoryPage";
 import CashierPage from "./pages/cashier/CashierPage";
 import CashierLoginPage from "./pages/cashier/CashierLoginPage";
+import { PwaStatus } from "./components/PwaStatus";
+import { StoreLayout } from "./layouts/StoreLayout";
+import { OwnerLayout } from "./layouts/OwnerLayout";
 
 function AppRoutes() {
     const { loading } = useAuth();
@@ -65,45 +69,22 @@ function AppRoutes() {
                 }
             />
             <Route
-                path="/"
                 element={
                     <OwnerRoute>
-                        <HomePage />
+                        <OwnerLayout />
                     </OwnerRoute>
                 }
-            />
-            <Route
-                path="/owner"
-                element={
-                    <OwnerRoute>
-                        <OwnerPage />
-                    </OwnerRoute>
-                }
-            />
-            <Route
-                path="/store/new"
-                element={
-                    <OwnerRoute>
-                        <CreateStorePage />
-                    </OwnerRoute>
-                }
-            />
-            <Route
-                path="/store/:storeId"
-                element={
-                    <OwnerRoute>
-                        <StorePage />
-                    </OwnerRoute>
-                }
-            />
-            <Route
-                path="/store/:storeId/inventory"
-                element={
-                    <OwnerRoute>
-                        <StoreInventoryPage />
-                    </OwnerRoute>
-                }
-            />
+            >
+                <Route path="/" element={<HomePage />} />
+                <Route path="/owner" element={<Navigate to="/" replace />} />
+                <Route path="/cashier/new" element={<CreateCashierPage />} />
+                <Route path="/store/new" element={<CreateStorePage />} />
+                <Route path="/store/:storeId" element={<StoreLayout />}>
+                    <Route index element={<StorePage />} />
+                    <Route path="stock" element={<StoreStockPage />} />
+                    <Route path="inventory" element={<StoreInventoryPage />} />
+                </Route>
+            </Route>
             <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );
@@ -112,6 +93,7 @@ function AppRoutes() {
 export default function App() {
     return (
         <AuthProvider>
+            <PwaStatus />
             <BrowserRouter>
                 <AppRoutes />
             </BrowserRouter>

@@ -1,0 +1,29 @@
+@layer base {
+  @media (forced-colors: none) {
+    :where(*) {
+      scrollbar-width: thin;
+      scrollbar-color: var(--line-strong) transparent;
+    }
+
+    @supports not (scrollbar-color: auto) {
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      ::-webkit-scrollbar-track,
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: var(--line-strong);
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--muted);
+      }
+    }
+  }
+}

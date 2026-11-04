@@ -1,0 +1,36 @@
+/* Shared colors for the app and native controls. */
+@layer base {
+  :root {
+    color-scheme: only light;
+    --canvas: #f7f8f3;
+    --surface: #ffffff;
+    --surface-soft: #f0f3ed;
+    --surface-muted: #e8ede5;
+    --ink: #263b2e;
+    --muted: #9daa9c;
+    --placeholder: #9daa9c;
+    --line: #d6dfd4;
+    --line-soft: #e5ebe2;
+    --line-strong: #849584;
+    --brand: #65846c;
+    --brand-soft: #e8f0e6;
+    --brand-tint: #dce8da;
+    --brand-line: #b8cbb7;
+    --brand-hover: #54745b;
+    --action: var(--brand);
+    --action-hover: var(--brand-hover);
+    --on-action: #ffffff;
+    --danger: #a32739;
+    --danger-soft: #fff0f0;
+    --danger-line: #edc4ca;
+    --danger-action: #a32739;
+    --danger-hover: #ad293e;
+    --success: var(--brand);
+    --success-soft: var(--brand-soft);
+    --success-line: var(--brand-line);
+    --warning: #784b13;
+    --warning-soft: #fff2d8;
+    --overlay: #263b2e85;
+    --shadow-card: 0 12px 45px #263b2e19;
+  }
+}

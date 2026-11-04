@@ -1,64 +1,41 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useOutletContext, useSearchParams } from "react-router-dom";
 import { CategoryForm } from "../../components/store/CategoryForm";
 import { OwnerMovementForm } from "../../components/store/OwnerMovementForm";
 import { ProductForm } from "../../components/store/ProductForm";
-import { isStoreId, readStoreCatalog, requireStoreOwner, storeErrorMessage } from "../../lib/storeData";
+import { storeErrorMessage } from "../../lib/storeData";
 import { ui } from "../../lib/ui";
+import { StoreHeader } from "../../components/store/StoreHeader";
+import type { StoreLayoutContext } from "../../layouts/StoreLayout";
 
-function StoreInventoryWorkspace({ storeId }: { storeId: string }) {
-    const [catalog, setCatalog] = useState<Awaited<ReturnType<typeof readStoreCatalog>> | null>(null);
-    const [loading, setLoading] = useState(true);
+export default function StoreInventoryPage() {
+    const { store, categories, products, catalogError, reloadCatalog } =
+        useOutletContext<StoreLayoutContext>();
+
+    const storeId = store.id;
+
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [search, setSearch] = useState("");
     const [editorVersion, setEditorVersion] = useState(0);
+
     const [searchParams, setSearchParams] = useSearchParams();
     const productId = searchParams.get("product");
+
     const busyRef = useRef(false);
     const mounted = useRef(false);
-    const version = useRef(0);
-
-    const load = useCallback(async () => {
-        const currentVersion = ++version.current;
-        try {
-            await requireStoreOwner(storeId);
-            const data = await readStoreCatalog(storeId);
-            if (currentVersion !== version.current) return;
-            setCatalog(data);
-            setError("");
-        } catch (error) {
-            if (currentVersion === version.current) setError(storeErrorMessage(error));
-        } finally {
-            if (currentVersion === version.current) setLoading(false);
-        }
-    }, [storeId]);
 
     useEffect(() => {
         mounted.current = true;
-        const initial = window.setTimeout(() => void load(), 0);
-        const refresh = () => {
-            if (!busyRef.current) void load();
-        };
-        const invalidate = () => {
-            mounted.current = false;
-            ++version.current;
-        };
-        const timer = window.setInterval(refresh, 15000);
-        window.addEventListener("focus", refresh);
         return () => {
-            invalidate();
-            window.clearTimeout(initial);
-            window.clearInterval(timer);
-            window.removeEventListener("focus", refresh);
+            mounted.current = false;
         };
-    }, [load]);
+    }, []);
 
     async function run(action: () => Promise<void>, success: string) {
         if (busyRef.current) return;
         busyRef.current = true;
-        ++version.current;
         setBusy(true);
         setError("");
         setNotice("");
@@ -66,7 +43,7 @@ function StoreInventoryWorkspace({ storeId }: { storeId: string }) {
             await action();
             if (!mounted.current) return;
             setNotice(success);
-            await load();
+            await reloadCatalog();
         } catch (error) {
             setError(storeErrorMessage(error));
         } finally {
@@ -90,43 +67,27 @@ function StoreInventoryWorkspace({ storeId }: { storeId: string }) {
         }
     }
 
-    if (loading)
-        return (
-            <main className="management-page">
-                <p role="status">Загрузка товаров и категорий...</p>
-            </main>
-        );
-
-    if (!catalog)
-        return (
-            <main className="management-page">
-                <Link to={`/store/${storeId}`}>← Вернуться в магазин</Link>
-                <p className={ui.error} role="alert">
-                    {error}
-                </p>
-                <button className={ui.button} onClick={() => void load()}>
-                    Повторить
-                </button>
-            </main>
-        );
-
-    const { store, categories, products } = catalog;
     const editing = products.find((product) => product.id === productId) ?? null;
 
     return (
         <main className="management-page !max-w-[1600px]">
-            <header>
-                <Link to={`/store/${storeId}`}>← Вернуться в магазин</Link>
-                <h1 className={ui.title}>Управление товарами</h1>
-                <p>{store.name}</p>
-                <p>Создавайте категории и товары, оформляйте приход и списание.</p>
-                <button className={ui.button} disabled={busy} onClick={() => void load()}>
+            <StoreHeader
+                backTo={`/store/${storeId}`}
+                backLabel="Вернуться в магазин"
+                title="Управление товарами"
+                description="Создавайте категории и обновляйте товары, чтобы управлять ассортиментом вашего магазина."
+            >
+                <button
+                    className={ui.button}
+                    disabled={busy}
+                    onClick={() => void reloadCatalog()}
+                >
                     Обновить данные
                 </button>
-            </header>
-            {error && (
+            </StoreHeader>
+            {(error || catalogError) && (
                 <p className={ui.error} role="alert">
-                    {error}
+                    {error || catalogError}
                 </p>
             )}
             {notice && (
@@ -211,16 +172,4 @@ function StoreInventoryWorkspace({ storeId }: { storeId: string }) {
             </div>
         </main>
     );
-}
-
-export default function StoreInventoryPage() {
-    const { storeId } = useParams();
-    if (!isStoreId(storeId))
-        return (
-            <main className="management-page">
-                <Link to="/owner">Мои магазины</Link>
-                <p role="alert">Некорректный адрес магазина.</p>
-            </main>
-        );
-    return <StoreInventoryWorkspace key={storeId} storeId={storeId} />;
 }

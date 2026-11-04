@@ -1,7 +1,7 @@
 import { ui } from "../../lib/ui";
 import { useRef, useState, type FormEvent } from "react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
 const CreateStorePage = () => {
@@ -77,18 +77,6 @@ const CreateStorePage = () => {
     return (
         <main className={ui.page}>
             <div className="mx-auto max-w-7xl px-8 pb-12 max-lg:px-6 max-md:px-4 max-md:pb-8">
-                <header className="site-header">
-                    <Link className="brand-link" to="/">
-                        <span className="brand-mark">S</span>SaleBase
-                    </Link>
-                    <nav aria-label="Основная навигация">
-                        <Link to="/">Главная</Link>
-                        <Link to="/owner">Магазины</Link>
-                        <Link to="/store/new" aria-current="page">
-                            Новый магазин
-                        </Link>
-                    </nav>
-                </header>
                 <div className="page-intro">
                     <div>
                         <span className={ui.eyebrow}>КАБИНЕТ ВЛАДЕЛЬЦА</span>
@@ -158,7 +146,7 @@ const CreateStorePage = () => {
                                     <button
                                         className={ui.buttonBase + " button-secondary"}
                                         type="button"
-                                        onClick={() => navigate("/owner")}
+                                        onClick={() => navigate("/")}
                                     >
                                         Отмена
                                     </button>

@@ -1,0 +1,114 @@
+
+  .throbber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .throbber-scene {
+    position: relative;
+    display: grid;
+    width: 144px;
+    height: 144px;
+    flex: none;
+    place-items: center;
+    contain: layout paint;
+    color: var(--brand);
+    background: radial-gradient(circle, var(--brand-tint), transparent 68%);
+  }
+
+  .throbber-orbit {
+    position: absolute;
+    display: block;
+    animation: throbber-orbit 3.6s linear infinite;
+  }
+
+  .throbber-orbit svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .throbber-orbit-outer {
+    width: 120px;
+    height: 120px;
+  }
+
+  .throbber-orbit-inner {
+    width: 88px;
+    height: 88px;
+    color: var(--success);
+    animation-duration: 2.4s;
+    animation-direction: reverse;
+  }
+
+  .throbber-track {
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.12;
+  }
+
+  .throbber-trail {
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    opacity: 0.7;
+  }
+
+  .throbber-satellite {
+    fill: currentColor;
+    stroke: var(--canvas);
+    stroke-width: 2;
+  }
+
+  .throbber-satellite-tail {
+    fill: currentColor;
+    opacity: 0.4;
+  }
+
+  .throbber-core {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border: 1px solid var(--brand-line);
+    border-radius: 16px;
+    color: var(--on-action);
+    background: linear-gradient(145deg, var(--action), var(--action-hover));
+    box-shadow: 0 6px 16px var(--brand-tint), inset 0 1px 0 #ffffff40;
+    animation: throbber-breathe 2.4s ease-in-out infinite;
+  }
+
+  .throbber-core svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  /* Keep every frame on transform/opacity; gradients and shadows stay static. */
+  @keyframes throbber-orbit {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes throbber-breathe {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.78;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .throbber-orbit,
+    .throbber-core {
+      animation: none;
+    }
+
+    .throbber-orbit-inner {
+      transform: rotate(135deg);
+    }
+  }
+

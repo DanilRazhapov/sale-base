@@ -1,0 +1,98 @@
+@layer components {
+  #root:has(> .owner-layout) {
+    @apply flex h-dvh flex-col;
+  }
+  .owner-layout {
+    @apply flex min-h-0 flex-1 flex-col bg-canvas;
+  }
+  .owner-header {
+    @apply relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4 max-sm:px-3;
+  }
+  .owner-body {
+    @apply grid min-h-0 flex-1 grid-cols-[12rem_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)];
+  }
+  .owner-sidebar {
+    @apply overflow-y-auto border-r border-line bg-surface p-3 max-md:max-h-[40dvh] max-md:border-r-0 max-md:border-b;
+  }
+  .owner-sidebar nav {
+    @apply flex flex-col gap-1 max-md:flex-row max-md:flex-wrap;
+  }
+  .owner-sidebar a {
+    @apply rounded-lg px-3 py-2.5 text-sm font-semibold text-muted hover:bg-surface-soft aria-[current=page]:bg-brand-soft aria-[current=page]:text-brand;
+  }
+  .owner-sidebar span[aria-disabled="true"] {
+    @apply cursor-default rounded-lg px-3 py-2.5 text-sm font-semibold text-muted opacity-60;
+  }
+  .owner-content {
+    @apply flex min-h-0 min-w-0 flex-col overflow-auto;
+  }
+  .owner-content > main {
+    @apply min-h-auto w-full flex-1;
+  }
+  .owner-account,
+  .owner-store-picker {
+    @apply relative min-w-0 max-w-64;
+  }
+  .owner-account summary,
+  .owner-store-picker summary {
+    @apply flex cursor-pointer list-none items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-sm font-semibold hover:bg-surface-soft;
+  }
+  .owner-account summary::-webkit-details-marker,
+  .owner-store-picker summary::-webkit-details-marker {
+    display: none;
+  }
+  .owner-store-picker summary {
+    @apply border-brand-line bg-brand-soft text-brand;
+  }
+  .owner-store-chevron {
+    @apply shrink-0 transition-transform duration-200 motion-reduce:transition-none;
+  }
+  .owner-store-picker[open] .owner-store-chevron {
+    @apply rotate-180;
+  }
+  .owner-store-menu {
+    @apply absolute top-full left-0 mt-2 grid max-h-[min(24rem,60dvh)] w-72 max-w-[calc(100vw-1.5rem)] gap-1 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg;
+  }
+  .owner-store-picker[open] .owner-store-menu {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: owner-store-drop 180ms ease-out;
+    }
+  }
+  .owner-store-menu a,
+  .owner-store-menu p {
+    @apply rounded-lg px-3 py-2.5 text-sm wrap-anywhere;
+  }
+  .owner-store-menu a {
+    @apply hover:bg-surface-soft aria-[current=true]:bg-brand-soft aria-[current=true]:text-brand;
+  }
+  .owner-store-menu p {
+    @apply text-muted;
+  }
+  .owner-account-menu {
+    @apply absolute top-full right-0 mt-2 grid w-64 max-w-[calc(100vw-1.5rem)] gap-1 rounded-xl border border-line bg-surface p-2 shadow-lg;
+  }
+  .owner-account-menu p {
+    @apply px-3 py-2 text-xs wrap-anywhere;
+  }
+  .owner-account-menu a,
+  .owner-account-menu button {
+    @apply rounded-lg px-3 py-2.5 text-left text-sm aria-disabled:cursor-default aria-disabled:text-muted;
+  }
+  .owner-account-menu button:not([aria-disabled="true"]) {
+    @apply cursor-pointer hover:bg-surface-soft;
+  }
+  .owner-footer {
+    @apply shrink-0 border-t border-line bg-surface px-6 py-4 text-center text-sm text-muted;
+  }
+}
+
+@keyframes owner-store-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

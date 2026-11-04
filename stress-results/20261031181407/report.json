@@ -1,0 +1,44 @@
+{
+  "runId": "20261031181407",
+  "prefix": "ТЕСТ 20261031181407",
+  "startedAt": "2026-10-31T18:14:07.244Z",
+  "status": "failed",
+  "metrics": [
+    {
+      "label": "owner_login",
+      "status": 200,
+      "ms": 506
+    },
+    {
+      "label": "owner_stores",
+      "status": 200,
+      "ms": 501
+    },
+    {
+      "label": "owner_logout",
+      "status": 204,
+      "ms": 470
+    }
+  ],
+  "failures": [
+    {
+      "message": "Expected exactly one Бибика store; got 0"
+    }
+  ],
+  "stages": [],
+  "categories": [],
+  "products": [],
+  "sales": [],
+  "checks": {},
+  "finishedAt": "2026-10-31T18:14:08.722Z",
+  "checkoutStats": null,
+  "requestStats": {
+    "requests": 3,
+    "errors": 0,
+    "minMs": 470,
+    "averageMs": 492,
+    "p50Ms": 501,
+    "p95Ms": 506,
+    "maxMs": 506
+  }
+}

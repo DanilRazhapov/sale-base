@@ -1,15 +1,16 @@
 import { ui } from "../../lib/ui";
+import { money, date } from "../../lib/formatters";
+import { StoreHeader } from "../../components/store/StoreHeader";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useOutletContext, useParams } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import type { Category, Product, Store } from "../../components/store/types";
 import {
     isStoreId,
     readAllStoreRows,
-    readStoreCatalog,
     requireStoreOwner,
     storeErrorMessage,
 } from "../../lib/storeData";
+import type { StoreLayoutContext } from "../../layouts/StoreLayout";
 
 type Cashier = { id: string; name: string; is_active: boolean };
 type Shift = {
@@ -34,41 +35,21 @@ type Movement = {
     cashier_id: string | null;
     created_by: string | null;
 };
-const money = (value: number) =>
-    value.toLocaleString("ru-RU", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-const date = (value: string | null) => (value ? new Date(value).toLocaleString("ru-RU") : "—");
-
-function needsCriticalRestock(product: Pick<Product, "stock" | "unit">) {
-    const currentStock = Number(product.stock ?? 0);
-    const threshold = product.unit === "кг" ? 0.5 : product.unit === "л" ? 10 : 2;
-    return currentStock <= threshold;
-}
-
-function needsRestock(product: Pick<Product, "stock" | "unit">) {
-    const currentStock = Number(product.stock ?? 0);
-    const threshold = product.unit === "кг" ? 1 : product.unit === "л" ? 15 : 5;
-    return currentStock <= threshold && !needsCriticalRestock(product);
-}
-
 function StoreWorkspace({ storeId }: { storeId: string }) {
-    const [store, setStore] = useState<Store | null>(null);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
     const [cashiers, setCashiers] = useState<Cashier[]>([]);
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [movements, setMovements] = useState<Movement[]>([]);
     const [revenue, setRevenue] = useState(0);
-    const [loading, setLoading] = useState(true);
+
     const [error, setError] = useState("");
-    const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("");
-    const [lowOnly, setLowOnly] = useState(false);
+
     const version = useRef(0);
+    const pendingLoad = useRef<Promise<void> | null>(null);
+
     const [cashierBusy, setCashierBusy] = useState(false);
     const cashierBusyRef = useRef(false);
+
+    const { store, products } = useOutletContext<StoreLayoutContext>();
 
     async function toggleCashier(cashier: Cashier) {
         if (cashierBusyRef.current) return;
@@ -81,6 +62,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                 p_active: !cashier.is_active,
             });
             if (error) throw error;
+            if (pendingLoad.current) await pendingLoad.current;
             await load();
         } catch (error) {
             setError(storeErrorMessage(error));
@@ -90,62 +72,65 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
         }
     }
 
-    const load = useCallback(async () => {
+    const load = useCallback(() => {
+        if (pendingLoad.current) return pendingLoad.current;
+
         const currentVersion = ++version.current;
-        try {
-            await requireStoreOwner(storeId);
+        const request = (async () => {
+            try {
+                await requireStoreOwner(storeId);
 
-            const results = await Promise.all([
-                readStoreCatalog(storeId),
-                readAllStoreRows<Cashier>("cashiers", "id, name, is_active", storeId),
+                const results = await Promise.all([
+                    readAllStoreRows<Cashier>("cashiers", "id, name, is_active", storeId),
 
-                supabase
-                    .from("cashier_shifts")
-                    .select("*")
-                    .eq("store_id", storeId)
-                    .order("opened_at", { ascending: false })
-                    .limit(10),
+                    supabase
+                        .from("cashier_shifts")
+                        .select("*")
+                        .eq("store_id", storeId)
+                        .order("opened_at", { ascending: false })
+                        .limit(10),
 
-                supabase
-                    .from("stock_movements")
-                    .select(
-                        "id, product_id, quantity, direction, movement_type, note, created_at, price_at_time, cashier_id, created_by",
-                    )
-                    .eq("store_id", storeId)
-                    .order("created_at", { ascending: false })
-                    .limit(30),
-            ]);
+                    supabase
+                        .from("stock_movements")
+                        .select(
+                            "id, product_id, quantity, direction, movement_type, note, created_at, price_at_time, cashier_id, created_by",
+                        )
+                        .eq("store_id", storeId)
+                        .order("created_at", { ascending: false })
+                        .limit(30),
+                ]);
 
-            const [catalog, cashierRows, shiftResult, movementResult] = results;
+                const [cashierRows, shiftResult, movementResult] = results;
 
-            if (shiftResult.error) throw shiftResult.error;
-            if (movementResult.error) throw movementResult.error;
+                if (shiftResult.error) throw shiftResult.error;
+                if (movementResult.error) throw movementResult.error;
 
-            const shiftRows: Shift[] = shiftResult.data ?? [];
-            const active = shiftRows.find((shift) => !shift.closed_at);
-            let total = 0;
+                const shiftRows: Shift[] = shiftResult.data ?? [];
+                const active = shiftRows.find((shift) => !shift.closed_at);
+                let total = 0;
 
-            if (active) {
-                const { data, error } = await supabase.rpc("store_shift_revenue", { p_shift_id: active.id });
-                if (error) throw error;
-                total = Number(data);
+                if (active) {
+                    const { data, error } = await supabase.rpc("store_shift_revenue", { p_shift_id: active.id });
+                    if (error) throw error;
+                    total = Number(data);
+                }
+
+                if (currentVersion !== version.current) return;
+                
+                setCashiers(cashierRows);
+                setShifts(shiftRows);
+                setMovements(movementResult.data ?? []);
+                setRevenue(total);
+                setError("");
+            } catch (error) {
+                if (currentVersion === version.current) setError(storeErrorMessage(error));
             }
-
-            if (currentVersion !== version.current) return;
-
-            setStore(catalog.store);
-            setCategories(catalog.categories);
-            setProducts(catalog.products);
-            setCashiers(cashierRows);
-            setShifts(shiftRows);
-            setMovements(movementResult.data ?? []);
-            setRevenue(total);
-            setError("");
-        } catch (error) {
-            if (currentVersion === version.current) setError(storeErrorMessage(error));
-        } finally {
-            if (currentVersion === version.current) setLoading(false);
-        }
+        })();
+        pendingLoad.current = request;
+        void request.finally(() => {
+            if (pendingLoad.current === request) pendingLoad.current = null;
+        });
+        return request;
     }, [storeId]);
 
     useEffect(() => {
@@ -153,6 +138,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
         const refresh = () => void load();
         const invalidate = () => {
             ++version.current;
+            pendingLoad.current = null;
         };
         const timer = window.setInterval(refresh, 15000);
         window.addEventListener("focus", refresh);
@@ -166,48 +152,22 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
 
     const activeShift = shifts.find((shift) => !shift.closed_at);
     const cashierName = (id: string) => cashiers.find((cashier) => cashier.id === id)?.name ?? "Кассир недоступен";
-    const visibleProducts = products.filter(
-        (product) =>
-            product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) &&
-            (!categoryFilter || String(product.category_id) === categoryFilter) &&
-            (!lowOnly || needsRestock(product)),
-    );
-
-    if (loading)
-        return (
-            <main className="management-page">
-                <p role="status">Загрузка магазина...</p>
-            </main>
-        );
-    if (!store)
-        return (
-            <main className="management-page">
-                <Link to="/owner">Мои магазины</Link>
-                <p role="alert">{error}</p>
-                <button className={ui.button} onClick={() => void load()}>
-                    Повторить
-                </button>
-            </main>
-        );
 
     return (
         <main className="management-page">
-            <header>
-                <Link to="/owner">← Мои магазины</Link>
-                <h1 className={ui.title}>{store.name}</h1>
-                <p>{store.address}</p>
-                <div className="flex flex-wrap gap-3">
-                    <Link
-                        className={ui.button + " inline-flex items-center !no-underline"}
-                        to={`/store/${storeId}/inventory`}
-                    >
-                        Управление товарами
-                    </Link>
-                    <button className={ui.button} onClick={() => void load()}>
-                        Обновить данные
-                    </button>
-                </div>
-            </header>
+            <StoreHeader
+                backTo="/"
+                backLabel="На главную"
+                title={store.name}
+                description={store.address || undefined}
+            >
+                <button
+                    className={ui.button}
+                    onClick={() => void load()}
+                >
+                    Обновить данные
+                </button>
+            </StoreHeader>
             {error && (
                 <p className={ui.error} role="alert">
                     {error}
@@ -311,7 +271,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                                     <td className="align-middle">{cashier.is_active ? "Активен" : "Отключён"}</td>
                                     <td className="align-middle">
                                         <button
-                                            className={`${ui.button} hover:bg-red-800`}
+                                            className={`${ui.button} hover:bg-danger-soft`}
                                             disabled={cashierBusy}
                                             onClick={() => void toggleCashier(cashier)}
                                         >
@@ -325,92 +285,9 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                 </div>
                 {!cashiers.length && (
                     <p>
-                        <Link to="/owner">Создать кассира</Link>
+                        <Link to="/cashier/new">Создать кассира</Link>
                     </p>
                 )}
-            </section>
-            <section className="store-section">
-                <h2 className={ui.heading}>Остатки товаров</h2>
-                <div className="flex flex-wrap items-end gap-4">
-                    <label className={ui.label}>
-                        Поиск
-                        <input
-                            className={ui.input}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Название товара"
-                        />
-                    </label>
-                    <label className={ui.label}>
-                        Категория
-                        <select
-                            className={ui.input}
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
-                        >
-                            <option value="">Все категории</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <div className={ui.label}>
-                        Порог для заказа
-                        <span className="text-sm font-normal">5 шт · 1 кг · 10 л</span>
-                    </div>
-                    <label className="flex cursor-pointer flex-row items-center gap-2 text-sm font-medium">
-                        <input
-                            className={ui.checkbox}
-                            type="checkbox"
-                            checked={lowOnly}
-                            onChange={(e) => setLowOnly(e.target.checked)}
-                        />
-                        Только остаток ≤ порога
-                    </label>
-                </div>
-                <div className="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Товар</th>
-                                <th>Категория</th>
-                                <th>Цена</th>
-                                <th>Остаток</th>
-                                <th>Обновлён</th>
-                                <th>Действие</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visibleProducts.map((product) => (
-                                <tr key={product.id} className={`${needsCriticalRestock(product) ? "stock-critical" : ""} ${needsRestock(product) ? "stock-warning" : ""}`.trim()}>
-                                    <td className="align-middle">{product.name}</td>
-                                    <td className="align-middle">
-                                        {categories.find((category) => category.id === product.category_id)?.name ??
-                                            "Без категории"}
-                                    </td>
-                                    <td className="align-middle">{money(Number(product.price ?? 0))}</td>
-                                    <td className="align-middle">
-                                        <b>
-                                            {product.stock ?? 0} {product.unit}
-                                        </b>
-                                    </td>
-                                    <td className="align-middle">{date(product.updated_at)}</td>
-                                    <td>
-                                        <Link
-                                            className={ui.button + " inline-flex items-center !no-underline"}
-                                            to={`/store/${storeId}/inventory?product=${encodeURIComponent(product.id)}`}
-                                        >
-                                            Редактировать
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                {!visibleProducts.length && <p>Товары не найдены.</p>}
             </section>
 
             <section className="store-section">
@@ -471,7 +348,7 @@ export default function StorePage() {
     if (!isStoreId(storeId)) {
         return (
             <main className={ui.page + " p-6 [&_a]:text-brand [&_p]:mt-4"}>
-                <Link to="/owner">Мои магазины</Link>
+                <Link to="/">На главную</Link>
                 <p role="alert">Некорректный адрес магазина.</p>
             </main>
         );
