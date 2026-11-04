@@ -1,44 +1,28 @@
 import { Link, useOutletContext } from "react-router-dom";
-import { useAuth } from "../../auth/session";
 import type { OwnerLayoutContext } from "../../layouts/OwnerLayout";
 
 function HomePage() {
-    const { owner } = useAuth();
-    const { stores, isLoadingStores, storesError } = useOutletContext<OwnerLayoutContext>();
-    const fullName = owner?.user.user_metadata.full_name;
-    const name = typeof fullName === "string" ? fullName.trim() : "";
+    const { stores, isLoadingStores, storesError, selectedStoreId } = useOutletContext<OwnerLayoutContext>();
+    const selectedStore = stores.find((store) => store.id === selectedStoreId);
 
     return (
-        <main className="owner-page owner-home">
-            <section className="home-welcome">
-                <div className="home-welcome-copy">
+        <main className="owner-page">
+            <header className="home-heading">
+                <div>
                     <span className="owner-kicker">Рабочее пространство</span>
-                    <h1>Ваши магазины</h1>
-                    <p>
-                        {name ? `Здравствуйте, ${name}! ` : ""}
-                        Откройте магазин, чтобы посмотреть товары, остатки и смены кассиров.
-                    </p>
-                    <Link className="button-link-primary" to="/store/new">
-                        <span aria-hidden="true">＋</span> Новый магазин
-                    </Link>
+                    <h1>Магазины</h1>
+                    <p>Управляйте ассортиментом, запасами и кассирами ваших торговых точек.</p>
                 </div>
-                <div className="home-welcome-art" aria-hidden="true">
-                    <svg viewBox="0 0 210 160" fill="none">
-                        <path d="M105 12 184 50v61l-79 38-79-38V50l79-38Z" />
-                        <path d="m26 50 79 39 79-39M105 89v60M65 31l80 39v60M65 130V70l79-39" />
-                        <path d="m26 81 79 39 79-39M105 12v37M65 70l40-21 40 21" />
-                        <circle cx="105" cy="89" r="5" />
-                        <circle cx="26" cy="50" r="4" />
-                        <circle cx="184" cy="111" r="4" />
-                    </svg>
-                </div>
-            </section>
+                <Link className="button-link-primary" to="/store/new">
+                    <span aria-hidden="true">＋</span> Новый магазин
+                </Link>
+            </header>
             <div className="home-workspace">
-                <section aria-labelledby="home-stores-heading">
-                    <div className="home-section-heading">
+                <section className="home-panel home-registry" aria-labelledby="home-stores-heading">
+                    <header className="home-panel-header">
                         <h2 id="home-stores-heading">Торговые точки</h2>
                         {!isLoadingStores && !storesError && <span className="store-count">{stores.length}</span>}
-                    </div>
+                    </header>
                     {isLoadingStores && (
                         <p className="stores-empty" role="status">
                             Загружаем магазины…
@@ -51,53 +35,52 @@ function HomePage() {
                     )}
                     {!isLoadingStores && !storesError && stores.length === 0 && (
                         <div className="stores-empty">
-                            <span className="icon-tile" aria-hidden="true">
-                                ◫
-                            </span>
-                            <h3>Здесь появятся ваши магазины</h3>
-                            <p>Добавьте первую торговую точку, чтобы настроить каталог и подключить кассиров.</p>
+                            <h3>Магазинов пока нет</h3>
+                            <p>Добавьте торговую точку, чтобы создать каталог и подключить кассиров.</p>
                         </div>
                     )}
                     {stores.length > 0 && (
-                        <ul className="home-store-list">
-                            {stores.map((store) => (
-                                <li key={store.id}>
-                                    <Link className="home-store-card" to={`/store/${store.id}`}>
-                                        <span className="icon-tile" aria-hidden="true">
-                                            ◫
-                                        </span>
-                                        <div>
-                                            <h3>{store.name}</h3>
-                                            <p>{store.address || "Адрес не указан"}</p>
-                                        </div>
-                                        <span className="home-store-arrow" aria-hidden="true">
-                                            ↗
-                                        </span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                        <>
+                            <div className="home-store-columns" aria-hidden="true">
+                                <span>Название</span>
+                                <span>Адрес</span>
+                                <span>Переход</span>
+                            </div>
+                            <ul className="home-store-list">
+                                {stores.map((store) => (
+                                    <li key={store.id}>
+                                        <Link className="home-store-row" to={`/store/${store.id}`}>
+                                            <strong>{store.name}</strong>
+                                            <span className="home-store-address">
+                                                {store.address || "Адрес не указан"}
+                                            </span>
+                                            <span className="home-store-arrow" aria-hidden="true">
+                                                Открыть →
+                                            </span>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
                     )}
                 </section>
-                <section aria-labelledby="home-actions-heading">
-                    <div className="home-section-heading">
-                        <h2 id="home-actions-heading">Быстрые действия</h2>
-                    </div>
-                    <div className="home-actions">
-                        <Link to="/store/new">
-                            <span>
-                                <strong>Создать магазин</strong>
-                                <small>Добавьте торговую точку</small>
-                            </span>
-                            <span aria-hidden="true">↗</span>
-                        </Link>
-                        <Link to="/cashier/new">
-                            <span>
-                                <strong>Создать кассира</strong>
-                                <small>Настройте доступ к кассе</small>
-                            </span>
-                            <span aria-hidden="true">↗</span>
-                        </Link>
+                <section className="home-panel home-current" aria-labelledby="home-current-heading">
+                    <header className="home-panel-header">
+                        <h2 id="home-current-heading">Выбранный магазин</h2>
+                    </header>
+                    <div className="home-current-body">
+                        {selectedStore ? (
+                            <>
+                                <strong>{selectedStore.name}</strong>
+                                {selectedStore.address && <p>{selectedStore.address}</p>}
+                                <div className="home-current-links">
+                                    <Link to={`/store/${selectedStore.id}/inventory`}>Товары</Link>
+                                    <Link to={`/store/${selectedStore.id}/stock`}>Остатки</Link>
+                                </div>
+                            </>
+                        ) : (
+                            <p>Откройте торговую точку из списка или выберите её в верхнем меню.</p>
+                        )}
                     </div>
                 </section>
             </div>

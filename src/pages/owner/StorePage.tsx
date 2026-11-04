@@ -184,122 +184,128 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                 </article>
             </section>
 
-            <section className="store-section">
-                <div className="store-section-heading">
-                    <h2 className={ui.heading}>Смена и касса</h2>
-                    <span className={`store-status${activeShift ? " is-active" : ""}`}>
-                        {activeShift ? "Смена открыта" : "Нет открытой смены"}
-                    </span>
-                </div>
-                <p>Смену открывает и закрывает кассир на рабочем планшете. Здесь отображаются данные смены.</p>
-                {activeShift ? (
-                    <>
-                        <p>
-                            Кассир: <b>{cashierName(activeShift.cashier_id)}</b> · Начало: {date(activeShift.opened_at)}
-                        </p>
-                        <p>
-                            Наличные на открытии: <b>{money(Number(activeShift.opening_cash))}</b>
-                        </p>
-                        <p>
-                            Выручка: {money(revenue)} · Ожидается в кассе:{" "}
-                            <b>{money(Number(activeShift.opening_cash) + revenue)}</b>
-                        </p>
-                        {activeShift.opened_by && (
-                            <p>Эта смена была открыта владельцем до перехода на рабочее место кассира.</p>
-                        )}
-                    </>
-                ) : null}
-                {!!shifts.filter((shift) => shift.closed_at).length && (
-                    <details>
-                        <summary>Последние закрытые смены</summary>
+            <div className="store-overview-columns">
+                <section className="store-section">
+                    <div className="store-section-heading">
+                        <h2 className={ui.heading}>Смена и касса</h2>
+                        <span className={`store-status${activeShift ? " is-active" : ""}`}>
+                            {activeShift ? "Смена открыта" : "Нет открытой смены"}
+                        </span>
+                    </div>
+                    <p>Смену открывает и закрывает кассир на рабочем планшете. Здесь отображаются данные смены.</p>
+                    {activeShift ? (
+                        <>
+                            <p>
+                                Кассир: <b>{cashierName(activeShift.cashier_id)}</b> · Начало:{" "}
+                                {date(activeShift.opened_at)}
+                            </p>
+                            <p>
+                                Наличные на открытии: <b>{money(Number(activeShift.opening_cash))}</b>
+                            </p>
+                            <p>
+                                Выручка: {money(revenue)} · Ожидается в кассе:{" "}
+                                <b>{money(Number(activeShift.opening_cash) + revenue)}</b>
+                            </p>
+                            {activeShift.opened_by && (
+                                <p>Эта смена была открыта владельцем до перехода на рабочее место кассира.</p>
+                            )}
+                        </>
+                    ) : null}
+                    {!!shifts.filter((shift) => shift.closed_at).length && (
+                        <details>
+                            <summary>Последние закрытые смены</summary>
+                            <div className="table-scroll">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Кассир</th>
+                                            <th>Открытие</th>
+                                            <th>Наличные на открытии</th>
+                                            <th>Закрытие</th>
+                                            <th>Ожидалось</th>
+                                            <th>Фактически</th>
+                                            <th>Разница</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {shifts
+                                            .filter((shift) => shift.closed_at)
+                                            .map((shift) => (
+                                                <tr key={shift.id}>
+                                                    <td>{cashierName(shift.cashier_id)}</td>
+                                                    <td>{date(shift.opened_at)}</td>
+                                                    <td>{money(Number(shift.opening_cash))}</td>
+                                                    <td>{date(shift.closed_at)}</td>
+                                                    <td>{money(Number(shift.expected_cash))}</td>
+                                                    <td>
+                                                        {shift.closing_cash === null
+                                                            ? "Автозакрытие · не пересчитано"
+                                                            : money(Number(shift.closing_cash))}
+                                                    </td>
+                                                    <td>
+                                                        {shift.closing_cash === null
+                                                            ? "—"
+                                                            : money(
+                                                                  Number(shift.closing_cash) -
+                                                                      Number(shift.expected_cash),
+                                                              )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    )}
+                </section>
+
+                <section className="store-section">
+                    <div className="store-section-heading">
+                        <h2 className={ui.heading}>Кассиры</h2>
+                        <Link className="button-secondary" to="/cashier/new">
+                            Новый кассир
+                        </Link>
+                    </div>
+                    {cashiers.length > 0 ? (
                         <div className="table-scroll">
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Кассир</th>
-                                        <th>Открытие</th>
-                                        <th>Наличные на открытии</th>
-                                        <th>Закрытие</th>
-                                        <th>Ожидалось</th>
-                                        <th>Фактически</th>
-                                        <th>Разница</th>
+                                        <th>Статус</th>
+                                        <th>Действие</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {shifts
-                                        .filter((shift) => shift.closed_at)
-                                        .map((shift) => (
-                                            <tr key={shift.id}>
-                                                <td>{cashierName(shift.cashier_id)}</td>
-                                                <td>{date(shift.opened_at)}</td>
-                                                <td>{money(Number(shift.opening_cash))}</td>
-                                                <td>{date(shift.closed_at)}</td>
-                                                <td>{money(Number(shift.expected_cash))}</td>
-                                                <td>
-                                                    {shift.closing_cash === null
-                                                        ? "Автозакрытие · не пересчитано"
-                                                        : money(Number(shift.closing_cash))}
-                                                </td>
-                                                <td>
-                                                    {shift.closing_cash === null
-                                                        ? "—"
-                                                        : money(
-                                                              Number(shift.closing_cash) - Number(shift.expected_cash),
-                                                          )}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                    {cashiers.map((cashier) => (
+                                        <tr key={cashier.id}>
+                                            <td className="align-middle">{cashier.name}</td>
+                                            <td className="align-middle">
+                                                <span
+                                                    className={`store-status${cashier.is_active ? " is-active" : ""}`}
+                                                >
+                                                    {cashier.is_active ? "Активен" : "Отключён"}
+                                                </span>
+                                            </td>
+                                            <td className="align-middle">
+                                                <button
+                                                    className={`${ui.button} hover:bg-danger-soft`}
+                                                    disabled={cashierBusy}
+                                                    onClick={() => void toggleCashier(cashier)}
+                                                >
+                                                    {cashier.is_active ? "Заблокировать" : "Разблокировать"}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
-                    </details>
-                )}
-            </section>
-
-            <section className="store-section">
-                <div className="store-section-heading">
-                    <h2 className={ui.heading}>Кассиры</h2>
-                    <Link className="button-secondary" to="/cashier/new">
-                        Новый кассир
-                    </Link>
-                </div>
-                {cashiers.length > 0 ? (
-                    <div className="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Кассир</th>
-                                    <th>Статус</th>
-                                    <th>Действие</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {cashiers.map((cashier) => (
-                                    <tr key={cashier.id}>
-                                        <td className="align-middle">{cashier.name}</td>
-                                        <td className="align-middle">
-                                            <span className={`store-status${cashier.is_active ? " is-active" : ""}`}>
-                                                {cashier.is_active ? "Активен" : "Отключён"}
-                                            </span>
-                                        </td>
-                                        <td className="align-middle">
-                                            <button
-                                                className={`${ui.button} hover:bg-danger-soft`}
-                                                disabled={cashierBusy}
-                                                onClick={() => void toggleCashier(cashier)}
-                                            >
-                                                {cashier.is_active ? "Заблокировать" : "Разблокировать"}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <p className="store-empty-row">Кассиры пока не добавлены.</p>
-                )}
-            </section>
+                    ) : (
+                        <p className="store-empty-row">Кассиры пока не добавлены.</p>
+                    )}
+                </section>
+            </div>
 
             <section className="store-section">
                 <h2 className={ui.heading}>Последние 30 движений</h2>

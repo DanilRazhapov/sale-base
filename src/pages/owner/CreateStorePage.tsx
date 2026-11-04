@@ -86,17 +86,12 @@ const CreateStorePage = () => {
                 </header>
                 <div className="owner-form-layout">
                     <section className="store-create-form" aria-labelledby="store-details-title">
-                        <div className="mb-7 flex items-center gap-4 [&_h2]:text-xl [&_h2]:tracking-tight [&_p]:mt-1 [&_p]:text-sm [&_p]:text-muted">
-                            <span className="icon-tile" aria-hidden="true">
-                                ▦
-                            </span>
-                            <div>
-                                <h2 className={ui.heading} id="store-details-title">
-                                    Информация о магазине
-                                </h2>
-                                <p>Укажите данные вашей торговой точки.</p>
-                            </div>
-                        </div>
+                        <header className="owner-form-panel-heading">
+                            <h2 className={ui.heading} id="store-details-title">
+                                Информация о магазине
+                            </h2>
+                            <p>Укажите данные вашей торговой точки.</p>
+                        </header>
                         <form onSubmit={handleSubmit} aria-busy={isSubmitting}>
                             <fieldset className={ui.fieldset} disabled={isSubmitting}>
                                 <label className={ui.label} htmlFor="store-name">
@@ -156,20 +151,15 @@ const CreateStorePage = () => {
                         </form>
                     </section>
                     <aside className="owner-form-aside">
-                        <span className={ui.eyebrow}>ПРЕДПРОСМОТР</span>
-                        <p className="mt-2 mb-4 text-xs text-muted">Так магазин будет выглядеть в вашем списке.</p>
+                        <h2 className={ui.heading}>Предпросмотр</h2>
+                        <p className="mt-1 mb-4 text-sm text-muted">Запись в списке магазинов.</p>
                         <article className="store-preview">
-                            <div className="row-between">
-                                <span className="icon-tile" aria-hidden="true">
-                                    ▦
-                                </span>
-                                <span className="store-preview-badge">Новый магазин</span>
-                            </div>
-                            <h3 className={ui.subheading}>{name.trim() || "Название магазина"}</h3>
-                            <p>{address.trim() || "Здесь появится адрес"}</p>
-                            <span className="card-footer">
-                                Товары, остатки и касса <b aria-hidden="true">→</b>
-                            </span>
+                            <dl>
+                                <dt>Название</dt>
+                                <dd>{name.trim() || "Название магазина"}</dd>
+                                <dt>Адрес</dt>
+                                <dd>{address.trim() || "Здесь появится адрес"}</dd>
+                            </dl>
                         </article>
                         <div className="store-next-steps">
                             <h2 className={ui.heading}>Что дальше?</h2>

@@ -1,15 +1,15 @@
 @layer components {
   .ui-button {
-    @apply min-h-12 cursor-pointer touch-manipulation rounded-lg border border-line bg-surface px-4 py-2.5 font-semibold text-ink transition-colors disabled:cursor-default disabled:opacity-50 motion-reduce:transition-none aria-pressed:border-brand aria-pressed:bg-action aria-pressed:text-on-action;
+    @apply min-h-11 cursor-pointer touch-manipulation rounded-md border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-ink transition-colors disabled:cursor-default disabled:opacity-50 motion-reduce:transition-none aria-pressed:border-brand-line aria-pressed:bg-brand-soft aria-pressed:text-brand;
   }
   .ui-button:where(:enabled:hover:not([aria-pressed="true"])) {
-    @apply border-brand-line bg-surface-soft;
+    @apply border-brand-line bg-surface-soft text-brand;
   }
   .ui-button-base {
     @apply cursor-pointer touch-manipulation font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-default disabled:opacity-50 motion-reduce:transition-none aria-pressed:border-brand aria-pressed:bg-action aria-pressed:text-on-action;
   }
   .ui-input {
-    @apply min-h-12 w-full rounded-lg border border-line bg-surface px-3.5 py-3 text-base text-ink placeholder:text-placeholder focus:border-brand focus:outline-2 focus:outline-offset-2 focus:outline-brand disabled:opacity-60;
+    @apply min-h-11 w-full rounded-md border border-line bg-surface px-3.5 py-2 text-base text-ink placeholder:text-placeholder focus:border-brand focus:outline-2 focus:outline-offset-2 focus:outline-brand disabled:opacity-60;
   }
   .ui-checkbox {
     @apply size-4 shrink-0 accent-brand;
@@ -21,7 +21,7 @@
     @apply flex min-w-0 flex-col gap-5 border-0 p-0;
   }
   .ui-title {
-    @apply text-3xl leading-[1.08] font-extrabold tracking-tight;
+    @apply text-3xl leading-tight font-bold tracking-tight;
   }
   .ui-heading {
     @apply text-xl leading-tight font-bold tracking-tight;
@@ -30,7 +30,7 @@
     @apply text-lg leading-tight font-semibold;
   }
   .ui-eyebrow {
-    @apply block font-mono text-xs font-semibold tracking-wider text-muted uppercase;
+    @apply block text-xs font-semibold tracking-wide text-muted uppercase;
   }
   .ui-muted {
     @apply text-muted;
@@ -39,13 +39,13 @@
     @apply min-h-dvh bg-canvas font-sans leading-relaxed text-ink;
   }
   .ui-error {
-    @apply my-4 rounded-xl border border-danger-line bg-danger-soft p-4 text-sm text-danger;
+    @apply my-4 rounded-md border border-danger-line border-s-4 border-s-danger bg-danger-soft p-3 text-sm text-danger;
   }
   .ui-notice {
-    @apply my-4 rounded-xl border border-success-line bg-success-soft p-4 text-sm text-success;
+    @apply my-4 rounded-md border border-success-line border-s-4 border-s-success bg-success-soft p-3 text-sm text-success;
   }
   .empty-state {
-    @apply flex min-h-56 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-surface-soft/40 p-6 text-center text-muted [&_p]:text-sm;
+    @apply flex min-h-44 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-surface-soft p-6 text-center text-muted [&_p]:text-sm;
   }
   .row-between {
     @apply flex items-center justify-between gap-2.5;
@@ -57,16 +57,16 @@
     @apply min-h-12 rounded-xl border-0 bg-danger-soft px-4 py-2.5 text-sm text-danger;
   }
   .button-primary {
-    @apply min-h-14 w-full rounded-lg border border-brand bg-action px-4 py-3 text-lg text-on-action hover:bg-action-hover;
+    @apply min-h-12 w-full rounded-md border border-brand bg-action px-4 py-2.5 text-sm text-on-action hover:bg-action-hover;
   }
   .button-danger {
     @apply min-h-12 rounded-xl border border-danger-action bg-danger-action px-4 py-2.5 text-on-action hover:bg-danger-hover;
   }
   .brand-link {
-    @apply inline-flex items-center gap-2.5 text-2xl font-extrabold tracking-tight text-ink no-underline;
+    @apply inline-flex items-center gap-2.5 text-xl font-bold tracking-tight text-ink no-underline;
   }
   .brand-mark {
-    @apply block size-10 shrink-0;
+    @apply block size-9 shrink-0;
     background: url("/favicon.svg") center / contain no-repeat;
   }
   .management-page {
@@ -85,7 +85,7 @@
     @apply rounded-xl border p-3.5 text-sm leading-relaxed wrap-anywhere border-danger-line bg-danger-soft text-danger;
   }
   .button-secondary {
-    @apply inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-line bg-surface px-5 py-3 text-sm text-ink no-underline hover:border-brand-line hover:bg-brand-soft;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink no-underline hover:border-brand-line hover:bg-brand-soft hover:text-brand;
   }
   .card-footer {
     @apply mt-5 flex justify-between border-t border-line-soft pt-4 text-xs font-semibold text-brand;
@@ -100,10 +100,10 @@
     @apply rounded-xl border p-3.5 text-sm leading-relaxed wrap-anywhere border-success-line bg-success-soft text-success;
   }
   .button-submit {
-    @apply inline-flex min-h-12 w-full items-center justify-between gap-2.5 rounded-lg border border-brand bg-action px-5 py-3 text-sm text-on-action no-underline shadow-sm hover:border-action-hover hover:bg-action-hover;
+    @apply inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-md border border-brand bg-action px-4 py-2 text-sm text-on-action no-underline hover:border-action-hover hover:bg-action-hover;
   }
   .button-link-primary {
-    @apply inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-brand bg-action px-5 py-3 text-sm font-semibold text-on-action no-underline shadow-sm hover:border-action-hover hover:bg-action-hover;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-brand bg-action px-4 py-2 text-sm font-semibold text-on-action no-underline hover:border-action-hover hover:bg-action-hover;
   }
   .store-grid {
     @apply grid grid-cols-2 gap-4 max-lg:grid-cols-1 max-md:grid-cols-2 max-[440px]:grid-cols-1;
@@ -112,17 +112,17 @@
     @apply min-h-56 animate-pulse rounded-2xl border border-line bg-surface-muted motion-reduce:animate-none;
   }
   .table-scroll {
-    @apply mt-4 overflow-x-auto rounded-lg border border-line [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:border-line [&_th]:bg-surface-soft [&_th]:p-3 [&_th]:text-xs [&_th]:font-bold [&_th]:text-muted [&_td]:border-b [&_td]:border-line-soft [&_td]:p-3 [&_td]:align-top [&_tbody_tr:last-child_td]:border-b-0;
+    @apply mt-4 overflow-x-auto rounded-md border border-line [&_table]:w-full [&_table]:border-collapse [&_table]:text-left [&_th]:whitespace-nowrap [&_th]:border-b [&_th]:border-line [&_th]:bg-surface-soft [&_th]:px-3 [&_th]:py-2 [&_th]:text-xs [&_th]:font-semibold [&_th]:text-muted [&_td]:border-b [&_td]:border-line-soft [&_td]:px-3 [&_td]:py-2.5 [&_td]:align-top [&_tbody_tr:last-child_td]:border-b-0;
   }
   .terminal-dialog {
-    @apply fixed inset-0 m-auto max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-line bg-surface p-6 font-sans leading-relaxed text-ink shadow-2xl backdrop:bg-overlay max-sm:p-4 [&_label]:my-4;
+    @apply fixed inset-0 m-auto max-h-[calc(100dvh-32px)] w-[min(520px,calc(100vw-24px))] overflow-y-auto rounded-lg border border-line border-t-[3px] border-t-brand bg-surface p-6 font-sans leading-relaxed text-ink shadow-2xl backdrop:bg-overlay max-sm:p-4 [&_label]:my-4;
   }
   .terminal-dialog-header {
     @apply mb-5 flex items-start justify-between gap-4 border-b border-line pb-4 [&_h2]:mt-1 [&_h2]:text-2xl [&_button]:min-w-12;
   }
   .session-loading {
-    @apply grid min-h-dvh place-content-center justify-items-center gap-3 bg-canvas p-4 text-center font-mono text-sm text-muted;
-    background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
-    background-size: 32px 32px;
+    @apply grid min-h-dvh place-content-center justify-items-center gap-3 bg-canvas p-4 text-center text-sm text-muted;
+    background-image: radial-gradient(var(--line) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 }

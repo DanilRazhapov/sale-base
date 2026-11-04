@@ -63,7 +63,15 @@ export function CashierCatalog({ lines, kind, ownShift, locked, mobileView, add,
                     Без категории
                 </button>
             </div>
-            <div className="pos-product-grid">
+            {filtered.length > 0 && (
+                <div className="pos-product-columns" aria-hidden="true">
+                    <span>Товар</span>
+                    <span>Остаток</span>
+                    <span>Цена</span>
+                    <span />
+                </div>
+            )}
+            <div className="pos-product-list">
                 {filtered.map((product) => {
                     const selected = lines.find((line) => line.product_id === product.id);
                     const unavailable = kind !== "receipt" && Number(product.stock ?? 0) <= 0;
@@ -76,24 +84,31 @@ export function CashierCatalog({ lines, kind, ownShift, locked, mobileView, add,
                             disabled={locked || !ownShift || unavailable || (kind === "sale" && product.price === null)}
                             onClick={() => add(product)}
                         >
-                            <span className="pos-product-category">
-                                <PosIcon name="box" />
-                                {categories.find((item) => item.id === product.category_id)?.name ?? "Без категории"}
-                            </span>
-                            <strong>{product.name}</strong>
-                            <span className="pos-product-price">
-                                {product.price === null ? "Цена не задана" : money(Number(product.price))}
-                                <small> / {product.unit ?? "шт"}</small>
+                            <span className="pos-product-name">
+                                <strong>{product.name}</strong>
+                                <span>
+                                    {categories.find((item) => item.id === product.category_id)?.name ??
+                                        "Без категории"}
+                                </span>
                             </span>
                             <span className="pos-product-stock">
-                                <span>
-                                    {unavailable
-                                        ? "Нет в наличии"
-                                        : `Остаток: ${product.stock ?? 0} ${product.unit ?? "шт"}`}
-                                </span>
-                                <span className="pos-product-quantity">
-                                    {selected ? selected.quantity : <PosIcon name="plus" />}
-                                </span>
+                                {unavailable ? (
+                                    "Нет в наличии"
+                                ) : (
+                                    <>
+                                        <span className="sr-only">Остаток </span>
+                                        {product.stock ?? 0} {product.unit ?? "шт"}
+                                    </>
+                                )}
+                            </span>
+                            <span className="pos-product-price">
+                                {product.price !== null && <span className="sr-only">Цена </span>}
+                                {product.price === null ? "Цена не задана" : money(Number(product.price))}
+                                {product.price !== null && <small> / {product.unit ?? "шт"}</small>}
+                            </span>
+                            <span className="pos-product-quantity">
+                                {selected && <span className="sr-only">В корзине </span>}
+                                {selected ? selected.quantity : <PosIcon name="plus" />}
                             </span>
                         </button>
                     );

@@ -93,8 +93,8 @@ export function CashierWorkspace({ token, onLogout }: { token: string; onLogout:
             ) : (
                 <section className="pos-loading">
                     <span className="brand-mark" aria-hidden="true" />
-                    <p className="pos-eyebrow">SaleBase / Касса</p>
-                    <h1 className={ui.title}>Торговая станция</h1>
+                    <p className="pos-eyebrow">SaleBase / Контур</p>
+                    <h1 className={ui.title}>Касса</h1>
                     {error ? (
                         <>
                             <p className={ui.error} role="alert">

@@ -13,12 +13,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.5rem 1rem;
   padding: 0.25rem 1rem;
-  border-block-end: 1px solid #ffffff28;
-  background: var(--navy-deep);
-  color: var(--paper);
+  border-block-end: 1px solid var(--brand-line);
+  background: var(--brand-soft);
+  color: var(--ink);
   font-size: 0.8rem;
 }
 .pwa-status span:not(:empty)::before {
@@ -27,24 +27,23 @@
   height: 0.4rem;
   margin-inline-end: 0.55rem;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--brand);
   vertical-align: 0.08em;
   content: "";
 }
 .pwa-status button {
-  min-height: 2rem;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--amber);
-  border-radius: 0.5rem;
-  color: var(--amber);
+  min-height: 1.75rem;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid var(--brand-line);
+  border-radius: 0.375rem;
+  background: var(--paper);
+  color: var(--brand);
+  font-weight: 600;
   cursor: pointer;
 }
 .pwa-status button:hover {
-  background: var(--amber);
-  color: var(--navy-deep);
-}
-.pwa-status button:focus-visible {
-  outline-color: var(--amber);
+  background: var(--brand);
+  color: var(--on-action);
 }
 
 @layer base {

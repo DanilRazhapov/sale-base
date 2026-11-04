@@ -1,45 +1,42 @@
 @layer base {
   :root {
     color-scheme: only light;
-    --navy: #172339;
-    --navy-deep: #101a2e;
-    --amber: #ffad6b;
-    --canvas: #f7f3e9;
-    --paper: #fffdf7;
+    --canvas: #edf2f9;
+    --paper: #ffffff;
     --surface: var(--paper);
-    --surface-soft: #f2ecdf;
-    --surface-muted: #eae2d2;
-    --ink: var(--navy);
-    --muted: #555d6b;
-    --placeholder: #69717e;
-    --line: #d9cfbc;
-    --line-soft: #e9e1d2;
-    --line-strong: #9d9382;
-    --brand: #a33e20;
-    --brand-soft: #f9e7d9;
-    --brand-tint: #f2d5c0;
-    --brand-line: #d8a48a;
-    --brand-hover: #823018;
+    --surface-soft: #f5f7fc;
+    --surface-muted: #e4eaf4;
+    --ink: #17233d;
+    --muted: #51607a;
+    --placeholder: #62708a;
+    --line: #cbd6e7;
+    --line-soft: #e1e7f1;
+    --line-strong: #8797b1;
+    --brand: #244bd6;
+    --brand-soft: #e6edff;
+    --brand-tint: #d6e2ff;
+    --brand-line: #aebff0;
+    --brand-hover: #1a39ad;
     --action: var(--brand);
     --action-hover: var(--brand-hover);
-    --on-action: #fffaf3;
-    --danger: #9b2940;
-    --danger-soft: #fff0f1;
-    --danger-line: #e8b7c1;
+    --on-action: #ffffff;
+    --danger: #a12642;
+    --danger-soft: #fff0f4;
+    --danger-line: #e7b8c6;
     --danger-action: var(--danger);
-    --danger-hover: #7d1f32;
-    --success: #2a624c;
-    --success-soft: #e4f1e7;
-    --success-line: #adcdb7;
-    --warning: #75521c;
-    --warning-soft: #fff0cf;
-    --overlay: #101a2eb3;
-    --shadow-card: 0 2px 4px #1723390a, 0 18px 42px #17233912;
+    --danger-hover: #7b1b31;
+    --success: #18644e;
+    --success-soft: #e1f4ec;
+    --success-line: #acd5c5;
+    --warning: #774b08;
+    --warning-soft: #fff2d8;
+    --overlay: #16294c80;
+    --shadow-card: 0 1px 3px #17233d0d, 0 8px 24px #2440700c;
   }
 
   ::selection {
     background: var(--brand-tint);
-    color: var(--navy-deep);
+    color: var(--ink);
   }
 
   :where(a, button, input, select, textarea, summary):focus-visible {

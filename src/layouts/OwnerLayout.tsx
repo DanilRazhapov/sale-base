@@ -16,7 +16,6 @@ export type OwnerLayoutContext = OwnerStoreList & { selectedStoreId: string | un
 
 export function OwnerLayout() {
     const { pathname } = useLocation();
-    const content = useRef<HTMLDivElement>(null);
     const { owner } = useAuth();
     const storeRoute = useMatch("/store/:storeId/*");
     const routeStoreId = storeRoute?.params.storeId;
@@ -45,7 +44,6 @@ export function OwnerLayout() {
         typeof fullName === "string" && fullName.trim() ? fullName.trim() : user?.email || "Аккаунт";
 
     useLayoutEffect(() => {
-        content.current?.scrollTo(0, 0);
         window.scrollTo(0, 0);
     }, [pathname]);
 
@@ -111,157 +109,136 @@ export function OwnerLayout() {
 
     return (
         <div className="owner-layout">
-            <aside className="owner-sidebar">
-                <Link className="owner-wordmark" to="/" aria-label="SaleBase, главная">
-                    <span className="brand-mark" aria-hidden="true" />
-                    <span>
+            <header className="owner-shell">
+                <div className="owner-header">
+                    <Link className="owner-wordmark" to="/" aria-label="SaleBase, главная">
+                        <span className="brand-mark" aria-hidden="true" />
                         <strong>SaleBase</strong>
-                        <small>Торговая станция</small>
-                    </span>
-                </Link>
-                <nav aria-label="Навигация кабинета">
-                    <div className="owner-nav-group">
-                        <span className="owner-nav-label">Кабинет</span>
+                    </Link>
+                    <span className="owner-header-label">Кабинет владельца</span>
+                    <details
+                        className="owner-store-picker"
+                        ref={storeMenu}
+                        onBlur={(event) => {
+                            if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+                                event.currentTarget.open = false;
+                            }
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === "Escape" && event.currentTarget.open) {
+                                event.currentTarget.open = false;
+                                event.currentTarget.querySelector("summary")?.focus();
+                            }
+                        }}
+                    >
+                        <summary>
+                            <span className="owner-picker-icon" aria-hidden="true">
+                                ◫
+                            </span>
+                            <span className="truncate">{selectedStore?.name ?? "Выбрать магазин"}</span>
+                            <span className="owner-menu-chevron" aria-hidden="true">
+                                ⌄
+                            </span>
+                        </summary>
+                        <div className="owner-store-menu" aria-label="Выбор магазина">
+                            {storeList.isLoadingStores && <p role="status">Загружаем магазины…</p>}
+                            {storeList.storesError && <p role="alert">{storeList.storesError}</p>}
+                            {!storeList.isLoadingStores && !storeList.storesError && !storeList.stores.length && (
+                                <p>У вас пока нет магазинов.</p>
+                            )}
+                            {storeList.stores.map((store) => (
+                                <Link
+                                    key={store.id}
+                                    to={`/store/${store.id}${storeSection}`}
+                                    aria-current={store.id === selectedStore?.id ? "true" : undefined}
+                                    onClick={() => {
+                                        if (storeMenu.current) {
+                                            storeMenu.current.querySelector("summary")?.focus();
+                                            storeMenu.current.open = false;
+                                        }
+                                    }}
+                                >
+                                    {store.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </details>
+                    <details
+                        className="owner-account"
+                        ref={accountMenu}
+                        onBlur={(event) => {
+                            if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+                                event.currentTarget.open = false;
+                            }
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === "Escape" && event.currentTarget.open) {
+                                event.currentTarget.open = false;
+                                event.currentTarget.querySelector("summary")?.focus();
+                            }
+                        }}
+                    >
+                        <summary aria-label={accountName}>
+                            <span className="owner-account-initial" aria-hidden="true">
+                                {accountName.slice(0, 1).toLocaleUpperCase()}
+                            </span>
+                            <span className="owner-account-name truncate">{accountName}</span>
+                            <span className="owner-menu-chevron" aria-hidden="true">
+                                ⌄
+                            </span>
+                        </summary>
+                        <div className="owner-account-menu">
+                            {user?.email && user.email !== accountName && <p>{user.email}</p>}
+                            <a href="#" aria-disabled="true" onClick={(event) => event.preventDefault()}>
+                                Настройки аккаунта
+                            </a>
+                            <button
+                                type="button"
+                                aria-disabled={isSigningOut}
+                                onClick={() => {
+                                    if (!isSigningOut) void signOut();
+                                }}
+                            >
+                                {isSigningOut ? "Выходим…" : "Выйти из аккаунта"}
+                            </button>
+                            {signOutError && (
+                                <p className="text-danger" role="alert">
+                                    {signOutError}
+                                </p>
+                            )}
+                        </div>
+                    </details>
+                </div>
+                <nav className="owner-nav" aria-label="Навигация кабинета">
+                    <div className="owner-nav-sections">
                         <NavLink to="/" end>
-                            <span aria-hidden="true">⌂</span>Главная
+                            Магазины
                         </NavLink>
-                    </div>
-                    <div className="owner-nav-group">
-                        <span className="owner-nav-label">Магазин</span>
-                        {storePath ? (
+                        {storePath && (
                             <>
                                 <NavLink to={storePath} end>
-                                    <span aria-hidden="true">◫</span>Обзор
+                                    Обзор
                                 </NavLink>
                                 <NavLink to={`${storePath}/inventory`} end>
-                                    <span aria-hidden="true">▦</span>Товары
+                                    Товары
                                 </NavLink>
                                 <NavLink to={`${storePath}/stock`} end>
-                                    <span aria-hidden="true">≡</span>Остатки
+                                    Остатки
                                 </NavLink>
-                            </>
-                        ) : (
-                            <>
-                                <span aria-disabled="true">
-                                    <span aria-hidden="true">◫</span>Обзор
-                                </span>
-                                <span aria-disabled="true">
-                                    <span aria-hidden="true">▦</span>Товары
-                                </span>
-                                <span aria-disabled="true">
-                                    <span aria-hidden="true">≡</span>Остатки
-                                </span>
                             </>
                         )}
                     </div>
-                    <div className="owner-nav-group">
-                        <span className="owner-nav-label">Добавить</span>
-                        <NavLink to="/store/new" end>
-                            <span aria-hidden="true">+</span>Новый магазин
+                    <div className="owner-nav-actions">
+                        <NavLink to="/store/new" aria-label="Новый магазин" end>
+                            <span aria-hidden="true">＋</span> Магазин
                         </NavLink>
-                        <NavLink to="/cashier/new" end>
-                            <span aria-hidden="true">+</span>Новый кассир
+                        <NavLink to="/cashier/new" aria-label="Новый кассир" end>
+                            <span aria-hidden="true">＋</span> Кассир
                         </NavLink>
                     </div>
                 </nav>
-                <span className="owner-sidebar-caption">Рабочее пространство</span>
-            </aside>
-            <header className="owner-header">
-                <span className="owner-header-label">Кабинет владельца</span>
-                <details
-                    className="owner-store-picker"
-                    ref={storeMenu}
-                    onBlur={(event) => {
-                        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
-                            event.currentTarget.open = false;
-                        }
-                    }}
-                    onKeyDown={(event) => {
-                        if (event.key === "Escape" && event.currentTarget.open) {
-                            event.currentTarget.open = false;
-                            event.currentTarget.querySelector("summary")?.focus();
-                        }
-                    }}
-                >
-                    <summary>
-                        <span className="owner-picker-icon" aria-hidden="true">
-                            ◫
-                        </span>
-                        <span className="truncate">{selectedStore?.name ?? "Выбрать магазин"}</span>
-                        <span className="owner-menu-chevron" aria-hidden="true">
-                            ⌄
-                        </span>
-                    </summary>
-                    <div className="owner-store-menu" aria-label="Выбор магазина">
-                        {storeList.isLoadingStores && <p role="status">Загружаем магазины…</p>}
-                        {storeList.storesError && <p role="alert">{storeList.storesError}</p>}
-                        {!storeList.isLoadingStores && !storeList.storesError && !storeList.stores.length && (
-                            <p>У вас пока нет магазинов.</p>
-                        )}
-                        {storeList.stores.map((store) => (
-                            <Link
-                                key={store.id}
-                                to={`/store/${store.id}${storeSection}`}
-                                aria-current={store.id === selectedStore?.id ? "true" : undefined}
-                                onClick={() => {
-                                    if (storeMenu.current) {
-                                        storeMenu.current.querySelector("summary")?.focus();
-                                        storeMenu.current.open = false;
-                                    }
-                                }}
-                            >
-                                {store.name}
-                            </Link>
-                        ))}
-                    </div>
-                </details>
-                <details
-                    className="owner-account"
-                    ref={accountMenu}
-                    onBlur={(event) => {
-                        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
-                            event.currentTarget.open = false;
-                        }
-                    }}
-                    onKeyDown={(event) => {
-                        if (event.key === "Escape" && event.currentTarget.open) {
-                            event.currentTarget.open = false;
-                            event.currentTarget.querySelector("summary")?.focus();
-                        }
-                    }}
-                >
-                    <summary aria-label={accountName}>
-                        <span className="owner-account-initial" aria-hidden="true">
-                            {accountName.slice(0, 1).toLocaleUpperCase()}
-                        </span>
-                        <span className="owner-account-name truncate">{accountName}</span>
-                        <span className="owner-menu-chevron" aria-hidden="true">
-                            ⌄
-                        </span>
-                    </summary>
-                    <div className="owner-account-menu">
-                        {user?.email && user.email !== accountName && <p>{user.email}</p>}
-                        <a href="#" aria-disabled="true" onClick={(event) => event.preventDefault()}>
-                            Настройки аккаунта
-                        </a>
-                        <button
-                            type="button"
-                            aria-disabled={isSigningOut}
-                            onClick={() => {
-                                if (!isSigningOut) void signOut();
-                            }}
-                        >
-                            {isSigningOut ? "Выходим…" : "Выйти из аккаунта"}
-                        </button>
-                        {signOutError && (
-                            <p className="text-danger" role="alert">
-                                {signOutError}
-                            </p>
-                        )}
-                    </div>
-                </details>
             </header>
-            <div className="owner-content" ref={content}>
+            <div className="owner-content">
                 <Outlet context={{ ...storeList, selectedStoreId: selectedStore?.id } satisfies OwnerLayoutContext} />
                 <footer className="owner-footer">
                     <span>SaleBase</span>

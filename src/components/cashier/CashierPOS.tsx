@@ -33,8 +33,10 @@ export function CashierPOS(props: CashierPOSProps) {
                     <div className="pos-identity">
                         <span className="brand-mark" aria-hidden="true" />
                         <div>
-                            <span className="pos-eyebrow">SaleBase / Касса</span>
-                            <strong>{snapshot.store.name}</strong>
+                            <span className="pos-eyebrow">SaleBase / Контур</span>
+                            <h1>
+                                Касса <span>/</span> {snapshot.store.name}
+                            </h1>
                         </div>
                     </div>
                     <nav aria-label="Действия кассира">
@@ -70,10 +72,19 @@ export function CashierPOS(props: CashierPOSProps) {
                 </div>
             </header>
             <div className="pos-workspace">
-                <div className="pos-intro">
-                    <div>
-                        <p className="pos-eyebrow">Рабочее место кассира</p>
-                        <h1 className={ui.title}>Торговая станция</h1>
+                <div className="pos-toolbar">
+                    <div className="pos-operation-tabs" role="group" aria-label="Тип операции">
+                        {operationKinds.map((value) => (
+                            <button
+                                className={ui.button}
+                                key={value}
+                                disabled={locked}
+                                aria-pressed={kind === value}
+                                onClick={() => changeKind(value)}
+                            >
+                                {kindName[value]}
+                            </button>
+                        ))}
                     </div>
                     <div className="pos-shift-indicator" data-active={ownShift}>
                         <span className="pos-shift-dot" aria-hidden="true" />
@@ -117,19 +128,6 @@ export function CashierPOS(props: CashierPOSProps) {
                         )}
                     </div>
                 )}
-                <div className="pos-operation-tabs" role="group" aria-label="Тип операции">
-                    {operationKinds.map((value, index) => (
-                        <button
-                            className={ui.button}
-                            key={value}
-                            disabled={locked}
-                            aria-pressed={kind === value}
-                            onClick={() => changeKind(value)}
-                        >
-                            <span aria-hidden="true">0{index + 1}</span> {kindName[value]}
-                        </button>
-                    ))}
-                </div>
                 <div className="pos-mobile-tabs" role="group" aria-label="Раздел кассы">
                     <button
                         className={ui.button}

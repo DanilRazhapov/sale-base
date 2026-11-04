@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ui } from "../../lib/ui";
 import type { Store } from "./types";
 
@@ -11,8 +11,6 @@ type PageHeaderProps = {
 };
 
 export function StoreHeader({ store, title, description, children }: PageHeaderProps) {
-    const storePath = `/store/${store.id}`;
-
     return (
         <header className="store-page-header">
             <div className="store-breadcrumb">
@@ -27,13 +25,6 @@ export function StoreHeader({ store, title, description, children }: PageHeaderP
                 </div>
                 {children && <div className="store-page-actions">{children}</div>}
             </div>
-            <nav className="store-tabs" aria-label="Разделы магазина">
-                <NavLink to={storePath} end>
-                    Обзор
-                </NavLink>
-                <NavLink to={`${storePath}/inventory`}>Товары</NavLink>
-                <NavLink to={`${storePath}/stock`}>Остатки</NavLink>
-            </nav>
         </header>
     );
 }

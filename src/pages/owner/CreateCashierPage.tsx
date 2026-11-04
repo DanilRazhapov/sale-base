@@ -93,9 +93,11 @@ export function CreateCashierPage() {
                 </header>
                 <div className="owner-form-layout">
                     <section className="store-create-form space-y-4" aria-labelledby="cashier-details-title">
-                        <h2 className={ui.heading} id="cashier-details-title">
-                            Данные кассира
-                        </h2>
+                        <header className="owner-form-panel-heading">
+                            <h2 className={ui.heading} id="cashier-details-title">
+                                Данные кассира
+                            </h2>
+                        </header>
                         {isLoadingStores && (
                             <p className={ui.muted} role="status">
                                 Загружаем магазины…

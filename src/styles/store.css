@@ -1,16 +1,13 @@
 @layer components {
   .store-page-header {
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 0.9rem;
-    background: var(--paper);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
   }
 
   .store-breadcrumb {
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    padding: 1.15rem clamp(1rem, 3vw, 2rem) 0;
     color: var(--muted);
     font-size: 0.8rem;
     overflow-wrap: anywhere;
@@ -31,7 +28,7 @@
     align-items: end;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.9rem clamp(1rem, 3vw, 2rem) 1.5rem;
+    padding-top: 0.45rem;
   }
 
   .store-page-heading > :first-child {
@@ -39,8 +36,8 @@
   }
 
   .store-page-heading h1 {
-    font-size: clamp(1.9rem, 4vw, 3.5rem);
-    letter-spacing: -0.055em;
+    font-size: clamp(1.8rem, 3vw, 2.75rem);
+    letter-spacing: -0.04em;
     overflow-wrap: anywhere;
   }
 
@@ -57,41 +54,11 @@
     gap: 0.75rem;
   }
 
-  .store-tabs {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0 clamp(0.5rem, 2vw, 1.4rem);
-    border-top: 1px solid var(--line-soft);
-    background: var(--surface-soft);
-  }
-
-  .store-tabs a {
-    min-height: 2.75rem;
-    padding: 0.7rem clamp(0.6rem, 2vw, 1rem);
-    border-bottom: 3px solid transparent;
-    color: var(--muted);
-    font-size: 0.875rem;
-    font-weight: 700;
-  }
-
-  .store-tabs a:hover,
-  .store-tabs a[aria-current="page"] {
-    color: var(--brand);
-  }
-
-  .store-tabs a[aria-current="page"] {
-    border-color: var(--brand);
-  }
-
-  .store-tabs a:focus-visible {
-    outline-offset: -3px;
-  }
-
   .store-section,
   .product-editor,
   .store-create-form,
   .inventory-catalog {
-    @apply min-w-0 rounded-xl border border-line bg-surface p-6 max-sm:p-4;
+    @apply min-w-0 rounded-lg border border-line bg-surface p-5 max-sm:p-3.5;
   }
 
   .store-section {
@@ -105,6 +72,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+  }
+
+  .store-overview-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    align-items: start;
+    gap: 1rem;
   }
 
   .store-section > p,
@@ -135,6 +109,7 @@
     background: var(--surface-soft);
     color: var(--muted);
     font-size: 0.8rem;
+    letter-spacing: 0.01em;
   }
 
   .store-section .table-scroll td {
@@ -182,9 +157,13 @@
 
   .store-statistics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-    gap: 0.65rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
     margin-top: 1.25rem;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.65rem;
+    background: var(--line);
   }
 
   .store-statistics article {
@@ -192,21 +171,19 @@
     min-width: 0;
     flex-direction: column;
     justify-content: space-between;
-    gap: 0.6rem;
-    padding: 1.15rem;
-    border-radius: 0.65rem;
-    background: var(--navy);
-    color: #fffaf1;
+    gap: 0.5rem;
+    padding: 0.95rem;
+    background: var(--surface);
     overflow-wrap: anywhere;
   }
 
   .store-statistics article span {
-    color: #d5dce8;
+    color: var(--muted);
     font-size: 0.78rem;
   }
 
   .store-statistics article strong {
-    color: var(--amber);
+    color: var(--brand);
     font-size: clamp(1.2rem, 2.3vw, 1.7rem);
     letter-spacing: -0.035em;
     line-height: 1.1;
@@ -214,7 +191,7 @@
 
   .inventory-workspace {
     display: grid;
-    grid-template-columns: minmax(15rem, 1fr) minmax(0, 1.4fr);
+    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 2fr);
     align-items: start;
     gap: 1.25rem;
     margin-top: 1.25rem;
@@ -235,14 +212,21 @@
   .inventory-products {
     display: grid;
     max-height: 24rem;
-    gap: 0.45rem;
+    gap: 1px;
     margin-top: 0.85rem;
-    padding: 0.2rem;
     overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    background: var(--line);
   }
 
   .inventory-product {
-    @apply flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-ink hover:bg-surface-soft disabled:opacity-50 aria-pressed:border-brand-hover aria-pressed:bg-brand-soft;
+    @apply flex w-full items-center justify-between gap-2 border-l-2 border-transparent bg-surface px-3 py-2.5 text-left text-ink hover:bg-surface-soft focus-visible:outline-offset-[-2px] disabled:opacity-50 aria-pressed:border-brand aria-pressed:bg-brand-soft;
+  }
+
+  .inventory-products > p {
+    padding-inline: 0.75rem;
+    background: var(--surface);
   }
 
   .inventory-product-copy {
@@ -348,16 +332,40 @@
     min-width: 0;
     padding: 1.25rem;
     border: 1px solid var(--line);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--surface);
+  }
+
+  .owner-form-panel-heading {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .owner-form-panel-heading p {
+    margin-top: 0.3rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .store-preview dl {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.5rem 0.8rem;
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
     background: var(--surface-soft);
+    font-size: 0.85rem;
   }
 
-  .store-preview {
-    @apply flex min-h-48 flex-col rounded-xl border border-line bg-surface p-4 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:wrap-anywhere [&>p]:flex-1 [&>p]:text-sm [&>p]:text-muted [&>p]:wrap-anywhere [&>p]:whitespace-pre-line;
+  .store-preview dt {
+    color: var(--muted);
   }
 
-  .store-preview-badge {
-    @apply rounded-md bg-brand-soft px-2 py-1 text-xs font-semibold text-brand;
+  .store-preview dd {
+    overflow-wrap: anywhere;
+    white-space: pre-line;
   }
 
   .store-next-steps {
@@ -375,12 +383,23 @@
 
   @media (max-width: 63.99rem) {
     .owner-form-layout,
-    .inventory-workspace {
+    .inventory-workspace,
+    .store-overview-columns {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .store-overview-columns {
+      gap: 0;
     }
 
     .inventory-products {
       max-height: 15rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .store-statistics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 }

@@ -1,168 +1,129 @@
 @layer components {
-  #root:has(> .owner-layout) {
+  #root:has(> .owner-layout),
+  .owner-layout,
+  .owner-content {
     display: flex;
-    min-height: 100dvh;
     flex-direction: column;
+  }
+
+  #root:has(> .owner-layout) {
+    min-height: 100dvh;
+  }
+
+  .owner-layout,
+  .owner-content,
+  .owner-content > main {
+    min-width: 0;
+    flex: 1;
   }
 
   .owner-layout {
-    display: grid;
-    flex: 1;
-    grid-template:
-      "sidebar header" auto
-      "sidebar content" minmax(0, 1fr) / 14rem minmax(0, 1fr);
+    --owner-gutter: clamp(0.9rem, 3vw, 2.4rem);
+    --owner-width: 88rem;
     background: var(--canvas);
   }
 
-  .owner-sidebar {
-    grid-area: sidebar;
-    position: sticky;
-    top: 0;
-    display: flex;
-    height: 100dvh;
-    flex-direction: column;
-    gap: 1.8rem;
-    padding: 1.25rem 0.85rem;
-    overflow: auto;
-    background: var(--navy-deep);
-    color: #f7f3e9;
+  .owner-content > main {
+    min-height: 0;
   }
 
-  .owner-wordmark {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.35rem;
-    line-height: 1.1;
+  .owner-shell {
+    z-index: 2;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
   }
 
-  .owner-wordmark strong,
-  .owner-wordmark small {
-    display: block;
-    white-space: nowrap;
-  }
-
-  .owner-wordmark strong {
-    font-size: 1.35rem;
-    letter-spacing: -0.04em;
-  }
-
-  .owner-wordmark small {
-    margin-top: 0.3rem;
-    color: #bdc7d9;
-    font-size: 0.69rem;
-  }
-
-  .owner-sidebar nav,
-  .owner-nav-group {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .owner-sidebar nav {
-    gap: 1.5rem;
-  }
-
-  .owner-nav-group {
-    gap: 0.25rem;
-  }
-
-  .owner-nav-label,
-  .owner-sidebar-caption,
-  .owner-kicker {
-    font: 700 0.7rem/1.3 var(--font-mono);
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-  }
-
-  .owner-nav-label {
-    padding: 0 0.65rem 0.35rem;
-    color: #aebbd3;
-  }
-
-  .owner-nav-group > a,
-  .owner-nav-group > [aria-disabled] {
-    display: flex;
-    min-height: 2.75rem;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.45rem 0.6rem;
-    border: 1px solid transparent;
-    border-radius: 0.45rem;
-    font-size: 0.85rem;
-    font-weight: 650;
-    white-space: nowrap;
-  }
-
-  .owner-nav-group [aria-hidden] {
-    width: 1.15rem;
-    color: var(--amber);
-    font-size: 1.05rem;
-    line-height: 1;
-    text-align: center;
-  }
-
-  .owner-nav-group > a:hover {
-    background: #ffffff12;
-  }
-
-  .owner-nav-group > a[aria-current="page"] {
-    border-color: #ffad6b55;
-    background: #ffad6b1c;
-    color: var(--amber);
-  }
-
-  .owner-nav-group > [aria-disabled] {
-    color: #aebbd3;
-  }
-
-  .owner-nav-group > [aria-disabled] [aria-hidden] {
-    color: inherit;
-  }
-
-  .owner-sidebar :focus-visible {
-    outline: 2px solid var(--amber);
-    outline-offset: -2px;
-  }
-
-  .owner-sidebar-caption {
-    margin-top: auto;
-    padding: 0.9rem 0.65rem 0;
-    border-top: 1px solid #ffffff26;
-    color: #aebbd3;
+  .owner-header,
+  .owner-nav,
+  .owner-page,
+  .owner-footer {
+    width: 100%;
+    max-width: var(--owner-width);
+    margin-inline: auto;
+    padding-inline: var(--owner-gutter);
   }
 
   .owner-header {
-    grid-area: header;
-    z-index: 2;
     display: flex;
-    min-width: 0;
-    min-height: 4.65rem;
+    min-height: 4.25rem;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem clamp(1rem, 3vw, 2.75rem);
-    border-bottom: 1px solid var(--line);
-    background: var(--paper);
+    gap: clamp(0.4rem, 2vw, 1rem);
+    padding-block: 0.55rem;
+  }
+
+  .owner-wordmark {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.3rem;
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+  }
+
+  .owner-wordmark .brand-mark {
+    width: 2rem;
+    height: 2rem;
   }
 
   .owner-header-label {
-    margin-right: auto;
+    padding-left: 0.9rem;
+    border-left: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .owner-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 0.6rem;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .owner-nav-sections,
+  .owner-nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(0.15rem, 1vw, 0.6rem);
+  }
+
+  .owner-nav-sections a,
+  .owner-nav-actions a {
+    display: inline-flex;
+    min-height: 2.65rem;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem clamp(0.3rem, 1.2vw, 0.75rem);
     color: var(--muted);
     font-size: 0.85rem;
     font-weight: 650;
+    white-space: nowrap;
   }
 
-  .owner-content {
-    grid-area: content;
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
+  .owner-nav-sections a {
+    border-bottom: 2px solid transparent;
   }
 
-  .owner-content > main {
-    width: 100%;
-    min-height: auto;
-    flex: 1;
+  .owner-nav-actions a {
+    color: var(--brand);
+  }
+
+  .owner-nav a:hover,
+  .owner-nav a[aria-current="page"] {
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+
+  .owner-nav-sections a[aria-current="page"] {
+    border-color: var(--brand);
+  }
+
+  .owner-nav a:focus-visible {
+    outline-offset: -2px;
   }
 
   .owner-account,
@@ -172,18 +133,18 @@
     max-width: 17rem;
   }
 
+  .owner-store-picker {
+    margin-left: auto;
+  }
+
   .owner-account summary,
   .owner-store-picker summary {
-    @apply flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-surface-soft;
+    @apply flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md border border-line px-2.5 py-1.5 text-sm font-semibold hover:bg-surface-soft;
   }
 
   .owner-account summary::-webkit-details-marker,
   .owner-store-picker summary::-webkit-details-marker {
     display: none;
-  }
-
-  .owner-store-picker summary {
-    @apply border-brand-line bg-brand-soft text-brand;
   }
 
   .owner-account-initial {
@@ -192,15 +153,16 @@
     height: 1.65rem;
     flex: 0 0 auto;
     place-items: center;
-    border-radius: 50%;
-    background: var(--navy);
-    color: #fff;
+    border-radius: 0.3rem;
+    background: var(--brand-soft);
+    color: var(--brand);
     font-size: 0.75rem;
   }
 
   .owner-picker-icon,
   .owner-menu-chevron {
     flex: 0 0 auto;
+    color: var(--brand);
   }
 
   .owner-store-picker[open] .owner-menu-chevron,
@@ -210,22 +172,18 @@
 
   .owner-store-menu,
   .owner-account-menu {
-    @apply absolute top-full z-10 mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-1 rounded-xl border border-line bg-surface p-2 shadow-card;
+    @apply absolute top-full right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-1 rounded-lg border border-line bg-surface p-2 shadow-card;
   }
 
   .owner-store-menu {
-    @apply left-0 max-h-[min(24rem,55dvh)] overflow-y-auto;
-  }
-
-  .owner-account-menu {
-    right: 0;
+    @apply max-h-[min(24rem,55dvh)] overflow-y-auto;
   }
 
   .owner-store-menu a,
   .owner-store-menu p,
   .owner-account-menu a,
   .owner-account-menu button {
-    @apply rounded-lg px-3 py-2.5 text-left text-sm wrap-anywhere;
+    @apply rounded-md px-3 py-2.5 text-left text-sm wrap-anywhere;
   }
 
   .owner-store-menu a {
@@ -250,7 +208,7 @@
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1rem clamp(1rem, 3vw, 2.75rem);
+    padding-block: 1rem;
     border-top: 1px solid var(--line);
     color: var(--muted);
     font-size: 0.75rem;
@@ -261,235 +219,209 @@
   }
 
   .owner-page {
-    width: 100%;
-    max-width: 100rem;
-    margin-inline: auto;
-    padding: clamp(1rem, 3vw, 2.75rem);
+    padding-block: clamp(1.1rem, 3vw, 2.4rem);
   }
 
   .owner-kicker {
     display: block;
     color: var(--brand);
+    font: 700 0.7rem/1.3 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
-  .home-welcome {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(10rem, 28%);
-    align-items: center;
-    overflow: hidden;
-    padding: clamp(1.4rem, 4vw, 3.1rem);
-    border-radius: 1rem;
-    background-color: var(--navy);
-    background-image:
-      linear-gradient(#ffffff0c 1px, transparent 1px),
-      linear-gradient(90deg, #ffffff0c 1px, transparent 1px);
-    background-size: 2rem 2rem;
-    color: #fffaf1;
+  .home-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin-bottom: 1.35rem;
   }
 
-  .home-welcome .owner-kicker {
-    color: var(--amber);
+  .home-heading h1 {
+    margin: 0.3rem 0;
+    font-size: clamp(1.85rem, 4vw, 3rem);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    line-height: 1.12;
   }
 
-  .home-welcome h1 {
-    margin: 0.75rem 0;
-    font-size: clamp(2rem, 5vw, 4.65rem);
-    font-weight: 760;
-    letter-spacing: -0.075em;
-    line-height: 1.03;
-  }
-
-  .home-welcome p {
-    max-width: 32rem;
-    margin-bottom: 1.4rem;
-    color: #d5dce8;
-    overflow-wrap: anywhere;
-  }
-
-  .home-welcome .button-link-primary {
-    border-color: var(--amber);
-    background: var(--amber);
-    color: var(--navy-deep);
-  }
-
-  .home-welcome .button-link-primary:hover {
-    background: #ffc795;
-  }
-
-  .home-welcome .button-link-primary:focus-visible {
-    outline: 2px solid var(--amber);
-    outline-offset: 4px;
-  }
-
-  .home-welcome-art {
-    display: grid;
-    place-items: center;
-    color: var(--amber);
-  }
-
-  .home-welcome-art svg {
-    width: min(100%, 15rem);
-    stroke: currentColor;
-    stroke-width: 1;
-  }
-
-  .home-welcome-art circle {
-    fill: var(--navy);
-    stroke-width: 2;
+  .home-heading p {
+    color: var(--muted);
+    font-size: 0.925rem;
   }
 
   .home-workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(14rem, 1fr);
-    gap: clamp(1.25rem, 3vw, 2rem);
-    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+    grid-template-columns: minmax(0, 2.4fr) minmax(13rem, 1fr);
+    align-items: start;
+    gap: 1rem;
   }
 
-  .home-section-heading {
-    display: flex;
-    min-height: 2.4rem;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 0.65rem;
-  }
-
-  .home-section-heading h2 {
-    font-size: clamp(1.2rem, 2vw, 1.65rem);
-    font-weight: 730;
-    letter-spacing: -0.035em;
-  }
-
-  .home-store-list {
-    display: grid;
-    gap: 0.65rem;
-  }
-
-  .home-store-card,
-  .home-actions > a {
-    display: flex;
+  .home-panel {
     min-width: 0;
-    align-items: center;
-    gap: 0.85rem;
-    padding: 1rem;
     border: 1px solid var(--line);
-    border-radius: 0.7rem;
-    background: var(--paper);
+    border-radius: 0.6rem;
+    background: var(--surface);
+  }
+
+  .home-panel-header {
+    display: flex;
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .home-panel-header h2 {
+    font-size: 1rem;
+    font-weight: 720;
+  }
+
+  .home-store-columns,
+  .home-store-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.7fr) 5rem;
+    align-items: center;
+    gap: 0.55rem 0.8rem;
+    padding: 0.75rem 1rem;
     overflow-wrap: anywhere;
   }
 
-  .home-store-card:hover,
-  .home-actions > a:hover {
-    border-color: var(--brand-line);
+  .home-store-columns {
+    background: var(--surface-soft);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+
+  .home-store-row {
+    min-height: 3.5rem;
+    font-size: 0.9rem;
+  }
+
+  .home-store-row:hover {
     background: var(--surface-soft);
   }
 
-  .home-store-card h3,
-  .home-actions strong {
-    font-weight: 720;
-    letter-spacing: -0.015em;
+  .home-store-row:focus-visible {
+    outline-offset: -3px;
   }
 
-  .home-store-card p,
-  .home-actions small {
-    display: block;
+  .home-store-list > li + li {
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .home-store-address,
+  .home-current p,
+  .stores-empty {
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
-  .home-store-arrow,
-  .home-actions > a > :last-child {
-    margin-left: auto;
+  .home-store-arrow {
     color: var(--brand);
-    font-size: 1.1rem;
+    font-size: 0.8rem;
+    font-weight: 650;
+    white-space: nowrap;
   }
 
-  .home-actions {
-    display: grid;
-    gap: 0.65rem;
+  .home-store-columns > :last-child,
+  .home-store-arrow {
+    text-align: right;
+  }
+
+  .home-current-body,
+  .stores-empty {
+    padding: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .home-current-body strong,
+  .stores-empty h3 {
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+
+  .home-current-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+  }
+
+  .home-current-links a {
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.3rem;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.8rem;
+    font-weight: 650;
+  }
+
+  .home-current-links a:hover {
+    text-decoration: underline;
+  }
+
+  .home-registry > .alert-error {
+    margin: 0.85rem;
   }
 
   .store-count {
     @apply inline-grid min-w-7 place-items-center rounded-md bg-brand-soft px-2 py-0.5 font-mono text-xs font-bold text-brand;
   }
 
-  .stores-empty {
-    @apply rounded-xl border border-dashed border-line-strong bg-surface px-6 py-7 text-center text-muted [&>span]:mx-auto [&>span]:mb-3 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-ink [&>p]:mx-auto [&>p]:mt-2 [&>p]:max-w-sm [&>p]:text-sm;
-  }
-
-  @media (min-width: 769px) {
-    #root:has(> .owner-layout) {
-      height: 100dvh;
+  @media (max-width: 760px) {
+    .owner-header {
+      position: relative;
     }
 
-    .owner-layout,
-    .owner-content {
-      min-height: 0;
+    .owner-header-label,
+    .owner-account-name {
+      display: none;
     }
 
-    .owner-sidebar {
+    .owner-store-picker {
       position: static;
-      height: auto;
     }
 
-    .owner-content {
-      overflow: auto;
+    .owner-store-menu {
+      inset-inline: var(--owner-gutter);
+      width: auto;
+      max-width: none;
     }
-  }
 
-  @media (max-width: 1023px) {
     .home-workspace {
       grid-template-columns: minmax(0, 1fr);
     }
   }
 
-  @media (max-width: 768px) {
-    .owner-layout {
-      grid-template:
-        "sidebar" auto
-        "header" auto
-        "content" 1fr / minmax(0, 1fr);
-    }
-
-    .owner-sidebar {
-      position: static;
-      height: auto;
-      gap: 0.5rem;
-      padding: 0.75rem 0.85rem;
-      overflow: hidden;
-    }
-
-    .owner-sidebar nav {
-      flex-direction: row;
-      gap: 0.4rem;
-      overflow-x: auto;
-    }
-
-    .owner-nav-group {
-      flex-direction: row;
-      flex: 0 0 auto;
-    }
-
-    .owner-nav-label,
-    .owner-sidebar-caption,
-    .owner-header-label {
+  @media (max-width: 470px) {
+    .owner-wordmark strong,
+    .owner-picker-icon,
+    .home-store-columns {
       display: none;
     }
 
-    .owner-header {
-      min-height: 3.8rem;
-      justify-content: space-between;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .home-welcome {
-      grid-template-columns: minmax(0, 1fr);
+    .owner-nav-sections,
+    .owner-nav-actions {
+      flex: 1 1 auto;
     }
 
-    .home-welcome-art,
-    .owner-account-name {
-      display: none;
+    .home-store-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .home-store-address {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .home-store-arrow {
+      grid-column: 2;
+      grid-row: 1 / 3;
     }
   }
 }
