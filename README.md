@@ -1,92 +1,63 @@
 # SaleBase
 
-React + TypeScript + Vite. Интерфейс владельца и рабочее место кассира размещаются на Cloudflare Pages. База, авторизация владельца и Edge Functions остаются в Supabase.
+В этом репозитории находятся два приложения React + TypeScript + Vite. Они используют один проект Supabase.
+
+- `cashier/` — вход по PIN, касса, PWA и Pages Function для `/api/cashier`.
+- `owner/` — вход и регистрация владельца, магазины, товары, остатки, инвентаризация и управление кассирами.
+- `shared/` — общие стили, компоненты и утилиты.
+- `supabase/` — общие миграции, серверные функции и тесты.
 
 ## Локальная разработка
 
-Все команды выполняются из `frontend`:
+Из `frontend` установите зависимости и подготовьте общие настройки:
 
 ```powershell
 npm ci
 Copy-Item .env.example .env.local
 ```
 
-Заполните `.env.local` значениями своего проекта Supabase:
+Заполните `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` в `.env.local`. Используйте тестовый проект Supabase для разработки. Секретный ключ и `service_role` нельзя добавлять в `VITE_*`.
 
-```dotenv
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
-```
+Откройте по отдельному терминалу для каждого приложения:
 
 ```powershell
-npm run dev
+npm run dev:cashier
+npm run dev:owner
 ```
 
-Версия Node.js для сборки указана в `.node-version`.
+Касса открывается на `http://localhost:5173`, кабинет — на `http://localhost:5174`. Команды `npm run build:cashier` и `npm run build:owner` создают отдельные сборки. `npm run build` собирает оба приложения. Команды `npm run preview:cashier` и `npm run preview:owner` открывают готовые сборки на портах 6173 и 6174. Версия Node.js указана в `.node-version`.
 
-## Стили: Tailwind CSS
+Если нужно проверить переход из кассы в кабинет, задайте `VITE_OWNER_APP_URL=http://localhost:5174` перед запуском dev-сервера кассы или `VITE_OWNER_APP_URL=http://localhost:6174` перед сборкой для preview.
 
-Все страницы используют Tailwind CSS v4 и официальный плагин `@tailwindcss/vite`.
-Классы раскладки и адаптивности находятся в JSX; общие классы полей, кнопок и заголовков — в `src/lib/ui.ts`.
-Общая светлая палитра находится в `src/styles/theme.css` и применяется также к нативным полям и выпадающим спискам.
-`tailwind.config.js` связывает семантические цвета (`surface`, `ink`, `line`, `brand`, `action`, статусы) с переменными палитры. Для новых цветов добавляйте переменную в обе темы; не используйте фиксированные цвета и наборы `dark:` в JSX.
-Стили элементов локализованы в `src/styles/components.css` (общие элементы), `auth.css` (авторизация), `cashier.css` (касса) и `store.css` (кабинет и товары). В JSX используйте именованные классы этих компонентов. Светлая и тёмная темы используют одну структуру компонентов и разные значения переменных.
-Для условных стилей используйте полные имена классов (например, `max-sm:hidden`), а не собирайте их из частей: Tailwind должен видеть класс при сборке.
+## Стили
 
-## Cloudflare Pages через Git
+Оба приложения используют Tailwind CSS v4. Общая палитра находится в `shared/styles/theme.css`, а семантические цвета Tailwind заданы в `tailwind.config.js`. Общие классы полей, кнопок и заголовков находятся в `shared/lib/ui.ts`. Стили кассы находятся в `cashier/styles`, стили кабинета — в `owner/styles`.
 
-При подключении репозитория задайте:
+В JSX используйте полные имена условных классов, чтобы Tailwind мог их обнаружить.
 
-| Настройка | Значение |
-| --- | --- |
-| Root directory | `frontend` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Конфигурация Wrangler | `frontend/wrangler.jsonc` |
-| Имя Pages-проекта | `salebase` |
+## Cloudflare Pages
 
-В настройках переменных окружения сборки добавьте `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` для Production и Preview. Используйте значения из своего Supabase-проекта.
+Подключите один репозиторий к двум проектам Pages. Для пробного запуска настройте сборку ветки `separate_test` в тестовых проектах.
 
-Vite встраивает эти значения в JavaScript во время сборки. Переменные `[vars]` в Wrangler не заменяют переменные окружения сборки. После изменения значений требуется новая сборка. При отсутствии обязательных переменных `npm run build` завершится с понятной ошибкой.
+| Настройка | Касса | Кабинет |
+| --- | --- | --- |
+| Root directory | `cashier` | `owner` |
+| Build command | `npm --prefix .. ci && npm --prefix .. run build:cashier` | `npm --prefix .. ci && npm --prefix .. run build:owner` |
+| Build output directory | `dist` | `dist` |
 
-Publishable key предназначен для браузера. Секретный ключ и `service_role` в `VITE_*` не добавляются. `.env.local` не нужно коммитить.
+В обоих проектах задайте `SKIP_DEPENDENCY_INSTALL=true` и `NODE_VERSION` по `.node-version` в корне репозитория. Команда сборки сама устанавливает зависимости из общего `package-lock.json`. Для независимых выпусков в Build watch paths каждого проекта включите каталог соответствующего приложения, `shared/*` и общие файлы сборки в корне репозитория, включая `package.json`, `package-lock.json`, конфигурации Vite, TypeScript и Tailwind.
 
-## Cloudflare Pages через Wrangler
+Добавьте `VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` в настройки сборки обоих проектов. Эти переменные также нужны во время выполнения Pages Function на стороне кассы. Для локальной проверки через Wrangler запускайте `npx wrangler pages dev dist` из каталога приложения и передайте переменные кассовой функции через `cashier/.dev.vars` или `--binding`. Для ручного развёртывания используйте `npx wrangler pages deploy dist --project-name <имя проекта>` из каталога соответствующего приложения. Перед публикацией сверьте имя проекта в его `wrangler.jsonc`.
 
-Сначала соберите приложение с заполненным `.env.local`:
+Если касса уже используется, сохраните её домен. Задайте `VITE_OWNER_APP_URL` в настройках сборки кассы как адрес нового кабинета, например `https://owner.example.com`. Касса будет направлять старые ссылки `/login/owner`, `/register`, `/owner`, `/store/…` и `/cashier/new` в кабинет с сохранением пути и параметров. Старые `/` и `/login` открывают кассу. В браузере владельцу потребуется заново войти на новом домене.
 
-```powershell
-npm run build
-npx wrangler login
-```
-
-Если Pages-проект ещё не создан:
-
-```powershell
-npx wrangler pages project create salebase
-```
-
-Публикация готовой сборки:
-
-```powershell
-npx wrangler pages deploy dist --project-name salebase
-```
-
-Проверка готовой сборки локально в окружении Pages:
-
-```powershell
-npx wrangler pages dev dist
-```
-
-`wrangler.toml` задаёт имя проекта, папку `dist` и дату совместимости. Сам Wrangler не запускает Vite-сборку перед `pages deploy`.
-
-## Маршруты приложения
-
-Cloudflare Pages автоматически обслуживает SPA при отсутствии корневого `404.html`. Благодаря этому прямое открытие и обновление `/cashier/`, `/owner` и `/store/:storeId` передаётся React Router. Не добавляйте `404.html` в `public`, если хотите сохранить это поведение.
+Документация Cloudflare: [монорепозитории](https://developers.cloudflare.com/pages/configuration/monorepos/), [пути для сборки](https://developers.cloudflare.com/pages/configuration/build-watch-paths/), [настройка Pages Functions](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
 ## Supabase
 
-Публикация на Pages не применяет SQL-миграции и не публикует Edge Functions. Для них отдельно выполняются:
+Оба приложения используют один проект Supabase. Для подтверждения регистрации добавьте адрес кабинета в Supabase Auth → URL Configuration как Site URL и разрешите `https://<домен-кабинета>/login/owner` в Redirect URLs. Добавьте отдельный локальный адрес кабинета, если проверяете регистрацию локально.
+
+Публикация на Pages не применяет SQL-миграции и не публикует Edge Functions. При необходимости это делается отдельно из `frontend`:
 
 ```powershell
 npx supabase db push
@@ -95,17 +66,11 @@ npx supabase functions deploy create-cashier
 npx supabase functions deploy cashier-terminal
 ```
 
-Если используется подтверждение почты или перенаправление после авторизации, настройте адрес опубликованного сайта в Supabase Auth → URL Configuration.
+## Сессии и смены
 
-Документация Cloudflare: [Wrangler для Pages](https://developers.cloudflare.com/pages/functions/wrangler-configuration/), [настройки сборки](https://developers.cloudflare.com/pages/configuration/build-configuration/), [маршрутизация SPA](https://developers.cloudflare.com/pages/configuration/serving-pages/).
-## Разделение владельца и кассира
-
-- `/login` — выбор рабочего места; `/login/owner` — почта и пароль владельца; `/login/cashier` — имя и PIN кассира.
-- `src/pages/owner` содержит кабинет владельца и его авторизацию, `src/pages/cashier` — вход кассира и кассу, `src/pages/auth` — выбор роли.
-- `src/auth` хранит состояние авторизации и проверки маршрутов. Кассир не попадает в кабинет владельца; владелец перед входом в кассу должен выйти из своего аккаунта.
 - Кассовый API не принимает авторизацию владельца. PIN-сессии не предоставляют прав Supabase Auth.
 - Миграция `20261030090000_single_cashier_session.sql` разрешает только одну действующую сессию на аккаунт кассира. Повторный вход возвращает 409, не отзывая первую сессию. После явного выхода или 12 часов можно войти снова; выход сам по себе не закрывает смену.
-- Закрытие вкладки не завершает серверную сессию. До выхода или истечения срока новый вход будет отклонён. Владение именем/PIN не позволяет определить, какой именно человек ими пользуется.
+- Вход кассира сохраняется в защищённой cookie на домене кассы до выхода или истечения срока сессии. Закрытие вкладки не завершает сессию. При повторном открытии в том же браузере касса проверяет cookie и загружает смену. Новый вход из другого браузера всё ещё будет отклонён, пока серверная сессия действует.
 
 Миграции `20261031010000_cashier_shift_lifecycle.sql` и `20261031010100_schedule_shift_expiry.sql` исправляют жизненный цикл смен:
 
@@ -116,31 +81,19 @@ npx supabase functions deploy cashier-terminal
 
 Для включения ограничения на сервере примените миграции и обновите `cashier-terminal` командами выше. Публикация фронтенда сама этого не делает.
 
-Проверки:
+
+## PWA кассы
+
+Готовая сборка кассы содержит manifest, иконки и Service Worker. Кассу можно установить через браузер. На iOS откройте её в Safari и выберите «Поделиться» → «На экран Домой». Для прежних установок сохранены идентификатор приложения и адрес запуска `/login`, который открывает вход кассира или действующую смену.
+
+PWA сохраняет файлы приложения для открытия без интернета. Для входа, каталога, смен и продаж нужно подключение к серверу. Новая версия применяется после закрытия всех вкладок и окон кассы.
+
+Проверки из `frontend`:
 
 ```powershell
-npm run build
+npm run typecheck
 npm run lint
+npm run build
+node stress-tools/pwa-check.mjs
 .\node_modules\.bin\deno.cmd test --config supabase/tests/deno.json --node-modules-dir=none --allow-read --allow-env --allow-ffi --allow-sys supabase/tests
 ```
-# PWA
-
-Production-сборка содержит manifest, иконки и Service Worker. Откройте приложение
-через HTTPS (или localhost) и дождитесь сообщения «Приложение сохранено для открытия
-без интернета». В поддерживаемом браузере появится кнопка «Установить SaleBase»;
-на iOS используйте Safari → Поделиться → На экран «Домой».
-
-После этого приложение открывается без сети, включая прямые ссылки на страницы.
-Вход, каталог, смены и сохранение продаж пока требуют сервера: PWA сохраняет только
-файлы приложения, не ответы Supabase, токены или данные продаж. Автономные продажи
-и синхронизация очереди в этот этап не входят.
-
-Обновление скачивается в отдельный кэш и применяется после закрытия всех вкладок
-и окон SaleBase. Принудительной перезагрузки кассы нет. Service Worker отключён
-в режиме разработки; проверяйте через `npm run build` и `npm run preview`.
-
-Проверка: дождитесь готовности кэша, отключите сеть, перезагрузите `/login/cashier`
-и убедитесь, что форма и уведомление об отсутствии связи доступны. Для проверки
-обновления откройте новую сборку с прежним профилем браузера, затем закройте все
-окна приложения и откройте снова. Очистка данных сайта удаляет оффлайн-копию.
-

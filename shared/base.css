@@ -1,0 +1,9 @@
+@import "./styles/theme.css";
+@import "./styles/scrollbar.css";
+@import "./styles/components.css";
+
+@layer base {
+  :root {
+    @apply bg-canvas text-ink;
+  }
+}

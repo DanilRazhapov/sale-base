@@ -1,0 +1,26 @@
+@import "tailwindcss" source(none);
+@import "../shared/base.css";
+@import "./styles/cashier.css";
+
+@config "../tailwind.config.js";
+@source "./**/*.{ts,tsx,html}";
+@source "../shared/**/*.{ts,tsx}";
+
+.pwa-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+
+.pwa-status button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--brand-hover);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
-const root = new URL('../dist/', import.meta.url);
+const root = new URL('../cashier/dist/', import.meta.url);
 const source = await readFile(new URL('sw.js', root), 'utf8');
 const handlers = {};
 const stores = new Map([['salebase-shell-old', new Map()], ['unrelated', new Map()]]);
@@ -45,7 +45,7 @@ await pending;
 assert(!stores.has('salebase-shell-old'));
 assert(stores.has('unrelated'));
 network = false;
-for (const path of ['/login/cashier', '/cashier', '/store/test/inventory']) {
+for (const path of ['/login', '/login/cashier', '/cashier']) {
     let response;
     handlers.fetch({ request: { method: 'GET', url: `https://sale.test${path}`, mode: 'navigate' },
         respondWith: promise => { response = promise; } });
@@ -65,6 +65,9 @@ for (const request of [
     handlers.fetch({ request, respondWith: () => assert.fail('API request intercepted') });
 }
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
+assert.equal(manifest.id, '/');
+assert.equal(manifest.start_url, '/login');
+assert.equal(manifest.scope, '/');
 for (const icon of manifest.icons) {
     const png = await readFile(new URL(icon.src.slice(1), root));
     const size = Number(icon.sizes.split('x')[0]);

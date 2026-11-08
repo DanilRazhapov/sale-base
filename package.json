@@ -4,10 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "npm run dev:cashier",
+    "dev:cashier": "vite --config cashier/vite.config.ts",
+    "dev:owner": "vite --config owner/vite.config.ts",
+    "build": "npm run build:cashier && npm run build:owner",
+    "build:cashier": "tsc -b cashier && vite build --config cashier/vite.config.ts",
+    "build:owner": "tsc -b owner && vite build --config owner/vite.config.ts",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run preview:cashier",
+    "preview:cashier": "vite preview --config cashier/vite.config.ts",
+    "preview:owner": "vite preview --config owner/vite.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

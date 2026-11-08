@@ -1,0 +1,7 @@
+{
+  "extends": "../tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.cashier.tsbuildinfo"
+  },
+  "include": ["**/*.tsx", "auth/**/*.ts", "components/**/*.ts", "lib/**/*.ts"]
+}
