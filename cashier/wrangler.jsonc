@@ -2,6 +2,7 @@
   "name": "salebase-cashier",
   "compatibility_date": "2026-11-15",
   "main": "./worker.ts",
+  "keep_vars": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
