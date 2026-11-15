@@ -1,4 +1,3 @@
-
 import { onRequest } from "./functions/api/cashier";
 
 type Env = {
