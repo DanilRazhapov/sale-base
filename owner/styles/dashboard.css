@@ -57,19 +57,19 @@
     @apply text-xs text-muted;
   }
   .dashboard-results {
-    @apply grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 max-md:grid-cols-1;
+    @apply grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 max-xl:grid-cols-1;
   }
   .dashboard-summary {
     @apply min-w-0;
   }
   .dashboard-charts {
-    @apply ml-auto flex w-[300px] max-w-full flex-col gap-4;
+    @apply ml-auto flex w-[300px] max-w-full flex-col gap-4 max-xl:grid max-xl:w-full max-xl:grid-cols-2 max-sm:grid-cols-1;
   }
   .dashboard-panel {
     @apply min-w-0 rounded-2xl border border-line bg-surface p-5 max-sm:p-4;
   }
   .dashboard-chart-card {
-    @apply flex h-[300px] w-[300px] max-w-full flex-col p-4;
+    @apply flex h-[300px] w-[300px] max-w-full flex-col p-4 max-xl:w-full;
   }
   .dashboard-chart-card .dashboard-empty-chart {
     @apply min-h-0 flex-1;
@@ -167,6 +167,57 @@
   }
   .dashboard-page :is(button, select, summary, .dashboard-revenue-chart):focus-visible {
     @apply outline-2 outline-offset-2 outline-brand;
+  }
+  @media (width < 48rem) {
+    .dashboard-container {
+      @apply pt-5 pb-6;
+    }
+    .dashboard-heading {
+      @apply mb-5 items-start gap-3;
+    }
+    .dashboard-heading > div {
+      @apply min-w-0 flex-1;
+    }
+    .dashboard-heading > button {
+      @apply min-h-10 px-3 py-2 text-xs;
+    }
+    .dashboard-filters {
+      @apply mb-4 gap-4 p-4;
+    }
+    .dashboard-filters label,
+    .dashboard-filters fieldset {
+      @apply w-full flex-auto;
+    }
+    .dashboard-periods button {
+      @apply min-w-0 flex-1 px-2;
+    }
+    .dashboard-timezone {
+      @apply mb-0;
+    }
+    .dashboard-kpis {
+      @apply mb-0 grid-cols-2 gap-3;
+    }
+    .dashboard-kpis article {
+      @apply p-4;
+    }
+    .dashboard-kpis article:first-child {
+      @apply col-span-2;
+    }
+    .dashboard-kpis strong {
+      @apply text-2xl;
+    }
+    .dashboard-kpis article:first-child strong {
+      @apply text-3xl;
+    }
+    .dashboard-kpis span {
+      @apply text-xs;
+    }
+    .dashboard-results {
+      @apply gap-4;
+    }
+    .dashboard-no-sales {
+      @apply mt-4 mb-0;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .dashboard-donut circle {

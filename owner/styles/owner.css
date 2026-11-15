@@ -9,10 +9,10 @@
     @apply relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4 max-sm:px-3;
   }
   .owner-body {
-    @apply grid min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)];
+    @apply grid min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)] max-md:grid-cols-1;
   }
   .owner-sidebar {
-    @apply overflow-y-auto border-r border-line bg-surface p-3 max-md:max-h-[40dvh] max-md:border-r-0 max-md:border-b;
+    @apply overflow-y-auto border-r border-line bg-surface p-3 max-md:hidden;
   }
   .owner-sidebar nav {
     @apply flex flex-col gap-1;
@@ -127,6 +127,88 @@
   }
   .owner-footer {
     @apply shrink-0 border-t border-line bg-surface px-6 py-4 text-center text-sm text-muted;
+  }
+  .owner-account-identity {
+    @apply font-semibold;
+  }
+  .owner-mobile-nav {
+    @apply hidden;
+  }
+  .owner-mobile-menu {
+    @apply fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-0 bg-surface p-0 text-ink shadow-2xl backdrop:bg-overlay;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .owner-mobile-menu-content {
+    @apply p-4;
+  }
+  .owner-mobile-menu-heading {
+    @apply mb-4 flex items-center justify-between gap-3 pl-3;
+  }
+  .owner-mobile-menu-heading h2 {
+    @apply text-lg font-semibold;
+  }
+  .owner-mobile-menu-heading button {
+    @apply grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-surface-soft text-2xl;
+  }
+  .owner-mobile-menu nav a {
+    @apply flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold wrap-anywhere hover:bg-surface-soft aria-[current=page]:bg-brand-soft;
+  }
+  .owner-layout :is(a, button, summary):focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+  @media (width < 48rem) {
+    .owner-header {
+      @apply gap-3 px-4 py-3;
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+    .owner-store-picker {
+      @apply max-w-none flex-1;
+    }
+    .owner-store-picker summary {
+      @apply min-h-11 justify-between border-0 bg-transparent px-0 text-base;
+    }
+    .owner-account summary {
+      @apply size-11 justify-center rounded-full bg-surface-soft p-0;
+    }
+    .owner-account-name,
+    .owner-account summary > span:last-child {
+      @apply hidden;
+    }
+    .owner-mobile-nav {
+      @apply z-10 flex shrink-0 items-stretch gap-1 border-t border-line bg-surface px-2 pt-2;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+    .owner-mobile-nav :is(a, button) {
+      @apply flex min-h-12 min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold text-muted no-underline aria-[current=page]:bg-brand-soft aria-[current=page]:text-ink;
+    }
+    .owner-mobile-nav .owner-nav-icon {
+      @apply size-5;
+    }
+    .owner-content {
+      overscroll-behavior-y: contain;
+      scroll-padding-block: 1rem;
+    }
+    .owner-footer {
+      @apply border-0 bg-transparent px-4 py-5 text-xs;
+    }
+    .owner-content .management-page {
+      @apply p-4;
+    }
+    .owner-content .ui-title {
+      @apply text-2xl wrap-anywhere;
+    }
+    .owner-content .ui-input {
+      @apply text-base;
+    }
+    .owner-content .page-intro {
+      @apply mt-5 mb-5 gap-4;
+    }
+    .owner-content .page-intro h1 {
+      @apply text-2xl;
+    }
+    .owner-content .store-create-form {
+      @apply p-4;
+    }
   }
 }
 

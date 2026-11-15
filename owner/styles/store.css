@@ -54,7 +54,7 @@
     @apply w-full rounded-xl border border-line bg-surface p-4 text-left text-ink disabled:opacity-50 hover:bg-surface-soft aria-pressed:border-brand-hover aria-pressed:bg-brand-soft;
   }
   .store-statistics {
-    @apply mt-6 grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-4 [&_article]:rounded-2xl [&_article]:border [&_article]:border-line [&_article]:bg-surface-soft [&_article]:p-5 [&_span]:block [&_strong]:mt-2 [&_strong]:block [&_strong]:text-2xl;
+    @apply mt-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,210px),1fr))] gap-4 [&_article]:min-w-0 [&_article]:rounded-2xl [&_article]:border [&_article]:border-line [&_article]:bg-surface-soft [&_article]:p-5 [&_span]:block [&_strong]:mt-2 [&_strong]:block [&_strong]:text-2xl [&_strong]:wrap-anywhere;
   }
   .product-image-field {
     @apply sm:col-span-2 rounded-xl border border-dashed border-line bg-surface-soft p-5;
@@ -64,5 +64,79 @@
   }
   .stock-critical {
     @apply text-danger;
+  }
+  .product-editor {
+    scroll-margin-top: 1rem;
+  }
+  @media (width < 48rem) {
+    .store-section,
+    .inventory-catalog,
+    .product-editor {
+      @apply min-w-0 p-4;
+    }
+    .store-section h2,
+    .product-editor h2 {
+      @apply text-lg wrap-anywhere;
+    }
+    .product-editor > p {
+      @apply mt-4 text-xs text-muted;
+    }
+    .inventory-product-list {
+      @apply max-h-72;
+    }
+    .stock-filters {
+      @apply flex-col items-stretch gap-3;
+    }
+    .stock-filters > label,
+    .stock-filters > div {
+      flex-basis: auto;
+    }
+    .stock-filters > label:last-child {
+      @apply min-h-11;
+    }
+    .owner-card-table {
+      @apply overflow-visible;
+    }
+    .owner-card-table :is(table, tbody) {
+      @apply block;
+    }
+    .owner-card-table thead {
+      @apply sr-only;
+    }
+    .owner-card-table tr {
+      @apply mb-3 block rounded-xl border border-line p-3;
+    }
+    .owner-card-table td {
+      @apply flex min-w-0 items-baseline justify-between gap-4 border-0 px-0 py-1.5 text-right text-sm wrap-anywhere;
+    }
+    .owner-card-table td::before {
+      content: attr(data-label);
+      @apply shrink-0 text-left text-xs font-normal text-muted;
+    }
+    .owner-card-table td:first-child {
+      @apply mb-2 block border-b border-line pb-3 text-left text-base font-semibold;
+    }
+    .owner-card-table td:first-child::before,
+    .owner-card-table td:last-child::before {
+      content: none;
+    }
+    .owner-card-table td:last-child {
+      @apply pt-3;
+    }
+    .owner-card-table td:last-child :is(a, button) {
+      @apply w-full justify-center text-center;
+    }
+    .store-statistics {
+      @apply grid-cols-2 gap-3;
+    }
+    .store-statistics article {
+      @apply p-3 text-xs;
+    }
+    .store-statistics strong {
+      @apply text-lg;
+    }
+    .store-section li > span {
+      @apply min-w-0 wrap-anywhere;
+    }
   }
 }
