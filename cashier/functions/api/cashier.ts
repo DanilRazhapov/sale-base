@@ -20,6 +20,49 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+class UpstreamError extends Error {
+    readonly code: string;
+    readonly upstreamStatus?: number;
+    readonly contentType?: string;
+
+    constructor(
+        code: string,
+        message: string,
+        upstreamStatus?: number,
+        contentType?: string,
+    ) {
+        super(message);
+        this.code = code;
+        this.upstreamStatus = upstreamStatus;
+        this.contentType = contentType;
+    }
+}
+
+async function requestSupabase(url: string, options: RequestInit) {
+    try {
+        return await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+    } catch (error) {
+        const timeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+        throw new UpstreamError(
+            timeout ? "CASHIER_UPSTREAM_TIMEOUT" : "CASHIER_UPSTREAM_FETCH_FAILED",
+            timeout ? "Supabase не ответил за 15 секунд." : "Worker не смог подключиться к Supabase.",
+        );
+    }
+}
+
+async function readSupabaseReply(response: Response): Promise<unknown> {
+    try {
+        return await response.json();
+    } catch {
+        throw new UpstreamError(
+            "CASHIER_UPSTREAM_INVALID_JSON",
+            `Supabase вернул ответ не в формате JSON (HTTP ${response.status}).`,
+            response.status,
+            response.headers.get("Content-Type")?.split(";")[0],
+        );
+    }
+}
+
 function reply(body: object, status = 200, cookie?: string) {
     const headers = new Headers({ "Cache-Control": "no-store" });
     if (cookie) headers.set("Set-Cookie", cookie);
@@ -115,7 +158,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
                 return reply({ error: "Неверное имя терминала." }, 400);
             }
 
-            const upstream = await fetch(`${url.replace(/\/$/, "")}/functions/v1/redeem-terminal-pairing-code`, {
+            const upstream = await requestSupabase(`${url.replace(/\/$/, "")}/functions/v1/redeem-terminal-pairing-code`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -126,7 +169,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
                 redirect: "error",
             });
             
-            const result: unknown = await upstream.json();
+            const result = await readSupabaseReply(upstream);
 
             if (!upstream.ok) {
                 const error = isRecord(result) && typeof result.error === "string"
@@ -162,7 +205,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
             );
         }
 
-        const upstream = await fetch(`${url.replace(/\/$/, "")}/functions/v1/cashier-terminal`, {
+        const upstream = await requestSupabase(`${url.replace(/\/$/, "")}/functions/v1/cashier-terminal`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -174,7 +217,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
                 : { action, ...fields, token: cashierToken }),
             redirect: "error",
         });
-        const result = await upstream.json() as TerminalReply | null;
+        const result = await readSupabaseReply(upstream) as TerminalReply | null;
         if (!upstream.ok) {
             return reply({ error: result?.error ?? "Операция кассира недоступна." }, upstream.status);
         }
@@ -196,7 +239,18 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
             return reply({ data: result.data, sessionId: currentSession }, 200, cookie);
         }
         return reply(result);
-    } catch {
-        return reply({ error: "Сервис кассира недоступен. Проверьте подключение и обновите данные." }, 502);
+    } catch (error) {
+        const failure = error instanceof UpstreamError ? error : new UpstreamError(
+            "CASHIER_PROXY_ERROR", "Ошибка обработки ответа Supabase в кассовом Worker.",
+        );
+        console.error("Cashier upstream failure", {
+            code: failure.code, action, upstream_status: failure.upstreamStatus, content_type: failure.contentType,
+        });
+        return reply({
+            error: failure.message,
+            code: failure.code,
+            upstream_status: failure.upstreamStatus,
+            content_type: failure.contentType,
+        }, failure.code === "CASHIER_UPSTREAM_TIMEOUT" ? 504 : 502);
     }
 }

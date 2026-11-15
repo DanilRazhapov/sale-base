@@ -41,7 +41,28 @@ try {
   const upstream = await worker.fetch(request({ action: 'pairing', code: '1234567', name: 'Test' }), config.vars)
   assert.equal(upstream.status, 400)
   assert.equal((await upstream.json()).error, 'test upstream response')
+
+  for (const [mock, code, status] of [
+    [async () => { throw new TypeError('fetch failed') }, 'CASHIER_UPSTREAM_FETCH_FAILED', 502],
+    [async () => { throw new DOMException('timeout', 'TimeoutError') }, 'CASHIER_UPSTREAM_TIMEOUT', 504],
+    [async () => new Response('<html>Bad gateway</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }), 'CASHIER_UPSTREAM_INVALID_JSON', 502],
+  ]) {
+    globalThis.fetch = mock
+    for (const body of [{ action: 'pairing', code: '1234567', name: 'Test' }, { action: 'device' }]) {
+      const req = request(body)
+      req.headers.set('Cookie', '__Secure-salebase_device=' + 'a'.repeat(64))
+      const response = await worker.fetch(req, config.vars)
+      assert.equal(response.status, status)
+      const result = await response.json()
+      assert.equal(result.code, code)
+      if (code === 'CASHIER_UPSTREAM_INVALID_JSON') {
+        assert.equal(result.upstream_status, 502)
+        assert.equal(result.content_type, 'text/html')
+      }
+      assert.ok(!JSON.stringify(result).includes(config.vars.VITE_SUPABASE_PUBLISHABLE_KEY))
+    }
+  }
 } finally {
   globalThis.fetch = originalFetch
 }
-console.log('OK: deployment paths, runtime bindings, missing-config response, device authorization and Supabase forwarding')
+console.log('OK: deployment paths, runtime bindings, device authorization, Supabase forwarding and network/timeout/non-JSON diagnostics')
