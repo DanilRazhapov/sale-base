@@ -92,7 +92,17 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     }
 
     const { VITE_SUPABASE_URL: url, VITE_SUPABASE_PUBLISHABLE_KEY: key } = env;
-    if (!url || !key) return reply({ error: "Кассовый API не настроен." }, 503);
+    if (!url || !key) {
+        const missing = [
+            !url && "VITE_SUPABASE_URL",
+            !key && "VITE_SUPABASE_PUBLISHABLE_KEY",
+        ].filter(Boolean);
+        return reply({
+            error: `Кассовый API не настроен. Worker не получил: ${missing.join(", ")}.`,
+            code: "CASHIER_ENV_MISSING",
+            missing,
+        }, 503);
+    }
 
     try {
         if (action === "pairing") {
