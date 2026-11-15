@@ -37,7 +37,7 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
     return (
         <section className="store-section">
                 <h2 className={ui.heading}>Остатки товаров</h2>
-                <div className="flex flex-wrap items-end gap-4">
+                <div className="stock-filters flex flex-wrap items-end gap-4">
                     <label className={ui.label}>
                         Поиск
                         <input
@@ -76,7 +76,7 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
                         Только остаток ≤ порога
                     </label>
                 </div>
-                <div className="table-scroll">
+                <div className="table-scroll owner-card-table">
                     <table>
                         <thead>
                             <tr>
@@ -91,19 +91,19 @@ export function ProductStockSection({products, categories, storeId,}: ProductSto
                         <tbody>
                             {visibleProducts.map((product) => (
                                 <tr key={product.id} className={`${needsCriticalRestock(product) ? "stock-critical" : ""} ${needsRestock(product) ? "stock-warning" : ""}`.trim()}>
-                                    <td className="align-middle">{product.name}</td>
-                                    <td className="align-middle">
+                                    <td data-label="Товар" className="align-middle">{product.name}</td>
+                                    <td data-label="Категория" className="align-middle">
                                         {categories.find((category) => category.id === product.category_id)?.name ??
                                             "Без категории"}
                                     </td>
-                                    <td className="align-middle">{money(Number(product.price ?? 0))}</td>
-                                    <td className="align-middle">
+                                    <td data-label="Цена" className="align-middle">{money(Number(product.price ?? 0))}</td>
+                                    <td data-label="Остаток" className="align-middle">
                                         <b>
                                             {product.stock ?? 0} {product.unit}
                                         </b>
                                     </td>
-                                    <td className="align-middle">{date(product.updated_at)}</td>
-                                    <td>
+                                    <td data-label="Обновлён" className="align-middle">{date(product.updated_at)}</td>
+                                    <td data-label="Действие">
                                         <Link
                                             className={ui.button + " inline-flex items-center !no-underline"}
                                             to={`/store/${storeId}/inventory?product=${encodeURIComponent(product.id)}`}

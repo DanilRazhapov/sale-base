@@ -38,6 +38,7 @@ export function OwnerLayout() {
     const storeSection = currentSection === "inventory" || currentSection === "stock" ? `/${currentSection}` : "";
     const storeMenu = useRef<HTMLDetailsElement>(null);
     const accountMenu = useRef<HTMLDetailsElement>(null);
+    const mobileMenu = useRef<HTMLDialogElement>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [signOutError, setSignOutError] = useState("");
     const user = owner?.user;
@@ -48,6 +49,7 @@ export function OwnerLayout() {
 
     useLayoutEffect(() => {
         content.current?.scrollTo(0, 0);
+        mobileMenu.current?.close();
     }, [pathname]);
 
     useEffect(() => {
@@ -83,6 +85,15 @@ export function OwnerLayout() {
         void loadStores();
         return () => { active = false; };
     }, [userId, storeId]);
+
+    useEffect(() => {
+        const desktop = window.matchMedia("(min-width: 48rem)");
+        const closeMobileMenu = () => {
+            if (desktop.matches) mobileMenu.current?.close();
+        };
+        desktop.addEventListener("change", closeMobileMenu);
+        return () => desktop.removeEventListener("change", closeMobileMenu);
+    }, []);
 
     useEffect(() => {
         function closeOnOutsideClick(event: PointerEvent) {
@@ -170,11 +181,13 @@ export function OwnerLayout() {
                         }
                     }}
                 >
-                    <summary>
-                        <span className="truncate">{accountName}</span>
+                    <summary aria-label={`Аккаунт: ${accountName}`}>
+                        <OwnerNavIcon name="account" />
+                        <span className="owner-account-name truncate">{accountName}</span>
                         <span aria-hidden="true">▾</span>
                     </summary>
                     <div className="owner-account-menu">
+                        <p className="owner-account-identity">{accountName}</p>
                         {user?.email && user.email !== accountName && <p>{user.email}</p>}
                         <a href="#" aria-disabled="true" onClick={(event) => event.preventDefault()}>
                             Настройки аккаунта
@@ -244,6 +257,41 @@ export function OwnerLayout() {
                     <footer className="owner-footer">Creator Danil Razhapov</footer>
                 </div>
             </div>
+            <nav className="owner-mobile-nav" aria-label="Основная навигация">
+                <NavLink to="/" end><OwnerNavIcon name="home" /><span>Главная</span></NavLink>
+                {storePath ? <>
+                    <NavLink to={storePath} end><OwnerNavIcon name="store" /><span>Магазин</span></NavLink>
+                    <NavLink to={`${storePath}/inventory`}><OwnerNavIcon name="products" /><span>Товары</span></NavLink>
+                    <NavLink to={`${storePath}/stock`}><OwnerNavIcon name="stock" /><span>Остатки</span></NavLink>
+                </> : <NavLink to="/store/new"><OwnerNavIcon name="store-add" /><span>Магазин</span></NavLink>}
+                <button type="button" aria-haspopup="dialog" onClick={() => mobileMenu.current?.showModal()}>
+                    <OwnerNavIcon name="more" /><span>Ещё</span>
+                </button>
+            </nav>
+            <dialog className="owner-mobile-menu" ref={mobileMenu} aria-labelledby="owner-mobile-menu-title"
+                onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+                <div className="owner-mobile-menu-content">
+                    <div className="owner-mobile-menu-heading">
+                        <h2 id="owner-mobile-menu-title">Кабинет владельца</h2>
+                        <button type="button" aria-label="Закрыть меню" onClick={() => mobileMenu.current?.close()}>×</button>
+                    </div>
+                    <nav aria-label="Дополнительная навигация" onClick={(event) => {
+                        if (event.target instanceof Element && event.target.closest("a")) mobileMenu.current?.close();
+                    }}>
+                        <p className="owner-nav-label">Ваши магазины</p>
+                        {storeList.isLoadingStores && <p className="owner-nav-status" role="status">Загружаем магазины…</p>}
+                        {storeList.storesError && <p className="owner-nav-status" role="alert">{storeList.storesError}</p>}
+                        {storeList.stores.map((store) => <Link key={store.id} to={`/store/${store.id}${storeSection}`}
+                            aria-current={store.id === storeId ? "page" : undefined}>
+                            <OwnerNavIcon name="store" /><span>{store.name}</span>
+                        </Link>)}
+                        <div className="owner-nav-group">
+                            <Link to="/store/new"><OwnerNavIcon name="store-add" /><span>Создать магазин</span></Link>
+                            <Link to="/cashier/new"><OwnerNavIcon name="cashier-add" /><span>Создать кассира</span></Link>
+                        </div>
+                    </nav>
+                </div>
+            </dialog>
         </div>
     );
 }

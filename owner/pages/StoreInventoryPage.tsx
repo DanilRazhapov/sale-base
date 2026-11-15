@@ -23,6 +23,12 @@ export default function StoreInventoryPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const productId = searchParams.get("product");
 
+    useEffect(() => {
+        if (productId !== null && window.matchMedia("(width < 80rem)").matches) {
+            document.getElementById("product-editor")?.scrollIntoView({ block: "start" });
+        }
+    }, [productId]);
+
     const busyRef = useRef(false);
     const mounted = useRef(false);
 
@@ -101,7 +107,10 @@ export default function StoreInventoryPage() {
                         <h2 className={ui.heading}>
                             Товары <span className="text-muted">{products.length}</span>
                         </h2>
-                        <button className={ui.button} disabled={busy} onClick={resetProductEditor}>
+                        <button className={ui.button} disabled={busy} onClick={() => {
+                            resetProductEditor();
+                            document.getElementById("product-editor")?.scrollIntoView({ block: "start" });
+                        }}>
                             + Добавить
                         </button>
                     </div>
@@ -114,7 +123,7 @@ export default function StoreInventoryPage() {
                             placeholder="Название товара"
                         />
                     </label>
-                    <div className="mt-4 max-h-[65vh] space-y-2 overflow-y-auto">
+                    <div className="inventory-product-list mt-4 max-h-[65vh] space-y-2 overflow-y-auto">
                         {products
                             .filter((product) => product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
                             .map((product) => (

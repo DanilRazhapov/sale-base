@@ -1,6 +1,8 @@
-type OwnerNavIconName = "home" | "store" | "products" | "stock" | "store-add" | "cashier-add";
+type OwnerNavIconName = "home" | "store" | "products" | "stock" | "store-add" | "cashier-add" | "more" | "account";
 
 const paths: Record<OwnerNavIconName, string> = {
+    more: "M4 6h16M4 12h16M4 18h16",
+    account: "M20 21v-2a8 8 0 0 0-16 0v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
     home: "m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9",
     store: "M3 10h18l-2-6H5l-2 6Zm1 0v10h16V10M9 20v-6h6v6M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0",
     products: "m12 3 9 5v8l-9 5-9-5V8l9-5Zm-9 5 9 5 9-5M12 13v8M7.5 5.5l9 5",
