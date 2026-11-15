@@ -1,0 +1,29 @@
+/* Owner palette follows the cashier workspace; shared styles consume these tokens. */
+@layer base {
+  :root {
+    color-scheme: only light;
+    --canvas: #f2f3ec;
+    --surface: #ffffff;
+    --surface-soft: #f1f2eb;
+    --surface-muted: #f1f2eb;
+    --ink: #242329;
+    --muted: #62656b;
+    --placeholder: var(--muted);
+    --line: #dedfd7;
+    --line-soft: #e6e8e0;
+    --line-strong: #8a8d82;
+    --brand: #242329;
+    --brand-soft: #ddef9a;
+    --brand-tint: #e5ddf7;
+    --brand-line: #c6d68c;
+    --brand-hover: #3a3941;
+    --action: #242329;
+    --action-hover: #3a3941;
+    --on-action: #ffffff;
+    --success: #405c33;
+    --success-soft: #ddef9a;
+    --success-line: #c6d68c;
+    --overlay: #24232985;
+    --shadow-card: 0 12px 45px #24232912;
+  }
+}

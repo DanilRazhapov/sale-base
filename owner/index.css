@@ -1,8 +1,10 @@
 @import "tailwindcss" source(none);
 @import "../shared/base.css";
+@import "./styles/theme.css";
 @import "./styles/auth.css";
 @import "./styles/store.css";
 @import "./styles/owner.css";
+@import "./styles/dashboard.css";
 
 @config "../tailwind.config.js";
 @source "./**/*.{ts,tsx,html}";

@@ -1,6 +1,7 @@
 import { ui } from "../../shared/lib/ui";
 import { money, date } from "../../shared/lib/formatters";
 import { StoreHeader } from "../components/store/StoreHeader";
+import { TerminalDevices } from "../components/store/TerminalDevices";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -167,6 +168,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                 >
                     Обновить данные
                 </button>
+                <TerminalDevices storeId={storeId} storeName={store.name} />
             </StoreHeader>
             {error && (
                 <p className={ui.error} role="alert">

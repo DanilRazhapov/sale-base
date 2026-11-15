@@ -1,5 +1,5 @@
 import { ui } from "../../shared/lib/ui";
-import { money, kindName } from "../lib/cashierFormat";
+import { money } from "../lib/cashierFormat";
 import type { CashierPOSProps } from "./types";
 import type { CashierPOSState } from "./useCashierPOS";
 import { lineCents, quantityMilli, type CartLine } from "../lib/cashierCart";
@@ -17,7 +17,6 @@ type Props = Pick<
     | "productMap"
     | "issues"
     | "pricesChanged"
-    | "mobileView"
     | "setDialog"
     | "storageError"
     | "quantity"
@@ -25,6 +24,18 @@ type Props = Pick<
     | "save"
 > &
     Pick<CashierPOSProps, "busy">;
+
+const cartTitle = {
+    sale: "Текущая продажа",
+    receipt: "Текущий приход",
+    writeoff: "Текущее списание",
+};
+
+const checkoutLabel = {
+    sale: "Завершить продажу",
+    receipt: "Провести приход",
+    writeoff: "Провести списание",
+};
 
 function QuantityControl({
     line,
@@ -49,7 +60,7 @@ function QuantityControl({
 
     return (
         <div className="pos-quantity-editor">
-            <div className="row-between">
+            <div className="pos-quantity-row">
                 <div className="pos-quantity-control">
                     {!isWeight && (
                         <button
@@ -129,7 +140,6 @@ export function CashierCart({
     productMap,
     issues,
     pricesChanged,
-    mobileView,
     setDialog,
     storageError,
     quantity,
@@ -138,28 +148,30 @@ export function CashierCart({
     busy,
 }: Props) {
     return (
-        <aside className={"pos-cart" + (mobileView === "products" ? " max-sm:hidden" : "")} aria-label="Корзина">
+        <aside className="pos-cart" aria-label={cartTitle[kind]}>
             <div className="pos-cart-header">
-                <div>
-                    <span className="pos-eyebrow">{kindName[kind]}</span>
-                    <h2 className={ui.heading}>
-                        Корзина <span>{lines.length}</span>
-                    </h2>
-                </div>
-                <button
-                    className={ui.buttonBase + " button-soft-danger"}
-                    disabled={locked || !lines.length}
-                    onClick={() => setDialog("clear")}
-                >
-                    Очистить
-                </button>
+                <h2 className={ui.heading}>{cartTitle[kind]}</h2>
+                <p>
+                    {kind === "sale" ? "Новый чек" : "Новый документ"} · {lines.length} поз.
+                </p>
             </div>
             <div className="pos-cart-lines">
                 {!lines.length ? (
-                    <div className="empty-state">
-                        <span className="pos-empty-icon">＋</span>
-                        <strong>Корзина пуста</strong>
-                        <p>Нажмите на товар слева, чтобы добавить его.</p>
+                    <div className="pos-cart-empty">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M3 3h2l2.4 12h11.2l2-8H5.8" />
+                            <circle cx="9" cy="20" r="1" />
+                            <circle cx="18" cy="20" r="1" />
+                        </svg>
+                        <strong>Нет Товаров</strong>
                     </div>
                 ) : (
                     lines.map((line) => (
@@ -175,8 +187,9 @@ export function CashierCart({
                                     ✕
                                 </button>
                             </div>
-                            <p>
-                                {line.price === null ? "Без цены" : money(line.price)} / {line.unit}
+                            <p className="pos-cart-line-price">
+                                {line.quantity.replace(".", ",")} {line.unit}
+                                {line.price === null ? " · Без цены" : ` × ${money(line.price)}`}
                             </p>
                             <QuantityControl
                                 line={line}
@@ -225,6 +238,7 @@ export function CashierCart({
                 {storageError && (
                     <p role="alert">Браузер не сохранил черновик. Не закрывайте страницу до подтверждения операции.</p>
                 )}
+                {kind === "sale" && <p className="pos-payment-method">Наличные</p>}
                 <div className="pos-total">
                     <span>{kind === "sale" ? "К оплате" : "Стоимость товаров"}</span>
                     <strong>{money(total)}</strong>
@@ -234,15 +248,15 @@ export function CashierCart({
                     disabled={busy || (!pending && (!ownShift || !lines.length || issues.length > 0))}
                     onClick={save}
                 >
-                    {busy ? "Сохранение…" : pending ? "Повторить сохранение" : "Сохранить"}
+                    {busy ? "Сохранение…" : pending ? "Повторить сохранение" : `${checkoutLabel[kind]} →`}
                 </button>
-                <p className="pos-checkout-hint">
-                    {kind === "sale"
-                        ? "Наличные · до 3 знаков после запятой для весовых товаров"
-                        : kind === "receipt"
-                          ? "Товары будут добавлены к остатку"
-                          : "Товары будут списаны с остатка"}
-                </p>
+                <button
+                    className={ui.button + " pos-clear-document"}
+                    disabled={locked || !lines.length}
+                    onClick={() => setDialog("clear")}
+                >
+                    Очистить документ
+                </button>
             </div>
         </aside>
     );

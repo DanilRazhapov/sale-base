@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useMatch } from "react-router-dom";
 import { useOwnerSession } from "../auth/session";
 import { supabase } from "../lib/supabase";
 import { isStoreId } from "../lib/storeData";
+import { OwnerNavIcon } from "../components/OwnerNavIcon";
 
 type OwnedStore = { id: string; name: string; address: string | null };
 
@@ -29,7 +30,8 @@ export function OwnerLayout() {
         isLoadingStores: true,
         storesError: "",
     });
-    const selectedStore = storeList.stores.find((store) => store.id === (storeId ?? lastStoreId));
+    const selectedStore = storeList.stores.find((store) => store.id === (storeId ?? lastStoreId))
+        ?? (storeId ? undefined : storeList.stores[0]);
     const activeStoreId = storeId ?? selectedStore?.id;
     const storePath = activeStoreId ? `/store/${activeStoreId}` : null;
     const currentSection = storeRoute?.params["*"]?.replace(/\/$/, "");
@@ -193,21 +195,48 @@ export function OwnerLayout() {
             <div className="owner-body">
                 <aside className="owner-sidebar">
                     <nav aria-label="Навигация кабинета">
-                        <NavLink to="/" end>Главная</NavLink>
-                        {storePath && (
-                            <>
-                                <NavLink to={`${storePath}/inventory`} end>Товары</NavLink>
-                                <NavLink to={`${storePath}/stock`} end>Остатки</NavLink>
-                            </>
-                        )}
-                        {!storePath && (
-                            <>
-                                <span aria-disabled="true">Товары</span>
-                                <span aria-disabled="true">Остатки</span>
-                            </>
-                        )}
-                        <NavLink to="/store/new" end>Создать магазин</NavLink>
-                        <NavLink to="/cashier/new" end>Создать кассира</NavLink>
+                        <NavLink to="/" end><OwnerNavIcon name="home" /><span>Главная</span></NavLink>
+                        <section className="owner-nav-group" aria-labelledby="owner-stores-label">
+                            <h2 id="owner-stores-label" className="owner-nav-label">Магазины</h2>
+                            <div className="owner-nav-stores">
+                                {storeList.isLoadingStores && <p className="owner-nav-status" role="status">Загружаем магазины…</p>}
+                                {storeList.storesError && <p className="owner-nav-status" role="alert">{storeList.storesError}</p>}
+                                {!storeList.isLoadingStores && !storeList.storesError && !storeList.stores.length && (
+                                    <p className="owner-nav-status">Пока нет магазинов. Создайте первый ниже.</p>
+                                )}
+                                {storeList.stores.map((store) => (
+                                    <Link
+                                        key={store.id}
+                                        to={`/store/${store.id}${storeSection}`}
+                                        aria-current={store.id === storeId ? "true" : undefined}
+                                        title={[store.name, store.address].filter(Boolean).join(" · ")}
+                                    >
+                                        <OwnerNavIcon name="store" />
+                                        <span className="owner-nav-store-name">{store.name}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+                        <section className="owner-nav-group" aria-labelledby="owner-store-tools-label">
+                            <h2 id="owner-store-tools-label" className="owner-nav-label">Управление магазином</h2>
+                            {storePath && (
+                                <>
+                                    <NavLink to={`${storePath}/inventory`} end><OwnerNavIcon name="products" /><span>Товары</span></NavLink>
+                                    <NavLink to={`${storePath}/stock`} end><OwnerNavIcon name="stock" /><span>Остатки</span></NavLink>
+                                </>
+                            )}
+                            {!storePath && (
+                                <>
+                                    <span className="owner-nav-disabled" aria-disabled="true"><OwnerNavIcon name="products" /><span>Товары</span></span>
+                                    <span className="owner-nav-disabled" aria-disabled="true"><OwnerNavIcon name="stock" /><span>Остатки</span></span>
+                                </>
+                            )}
+                        </section>
+                        <section className="owner-nav-group" aria-labelledby="owner-create-label">
+                            <h2 id="owner-create-label" className="owner-nav-label">Добавить</h2>
+                            <NavLink to="/store/new" end><OwnerNavIcon name="store-add" /><span>Создать магазин</span></NavLink>
+                            <NavLink to="/cashier/new" end><OwnerNavIcon name="cashier-add" /><span>Создать кассира</span></NavLink>
+                        </section>
                     </nav>
                 </aside>
                 <div className="owner-content" ref={content}>

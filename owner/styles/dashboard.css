@@ -1,0 +1,176 @@
+@layer components {
+  .dashboard-container {
+    @apply mx-auto w-full max-w-7xl px-8 pt-8 pb-10 max-lg:px-6 max-md:px-4 max-md:pt-6;
+  }
+  .dashboard-heading {
+    @apply mb-7 flex flex-wrap items-center justify-between gap-4;
+  }
+  .dashboard-heading h1 {
+    @apply mt-2 mb-2;
+  }
+  .dashboard-heading p {
+    @apply text-sm text-muted;
+  }
+  .dashboard-filters {
+    @apply mb-6 flex flex-wrap items-end gap-5 rounded-2xl border border-line bg-surface p-4;
+  }
+  .dashboard-filters label {
+    @apply flex min-w-0 flex-1 basis-56 flex-col gap-2 text-xs font-semibold;
+  }
+  .dashboard-filters select {
+    @apply min-w-0 text-sm;
+  }
+  .dashboard-filters fieldset {
+    @apply min-w-0 border-0 p-0;
+  }
+  .dashboard-filters legend {
+    @apply mb-2 text-xs font-semibold;
+  }
+  .dashboard-periods {
+    @apply flex min-h-12 gap-1 rounded-xl bg-surface-soft p-1;
+  }
+  .dashboard-periods button {
+    @apply cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface aria-pressed:bg-action aria-pressed:text-on-action motion-reduce:transition-none;
+  }
+  .dashboard-timezone {
+    @apply mb-3 text-xs text-muted;
+  }
+  .dashboard-kpis {
+    @apply mb-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-4;
+  }
+  .dashboard-kpis article {
+    @apply flex min-w-0 flex-col gap-2 rounded-2xl border border-line bg-surface p-5;
+  }
+  .dashboard-kpis article:first-child {
+    @apply border-brand-line bg-brand-soft;
+  }
+  .dashboard-kpis article:nth-child(2) {
+    @apply bg-brand-tint;
+  }
+  .dashboard-kpis span {
+    @apply text-sm font-medium;
+  }
+  .dashboard-kpis strong {
+    @apply text-3xl leading-tight font-semibold tracking-tight wrap-anywhere;
+  }
+  .dashboard-kpis small {
+    @apply text-xs text-muted;
+  }
+  .dashboard-results {
+    @apply grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6 max-md:grid-cols-1;
+  }
+  .dashboard-summary {
+    @apply min-w-0;
+  }
+  .dashboard-charts {
+    @apply ml-auto flex w-[300px] max-w-full flex-col gap-4;
+  }
+  .dashboard-panel {
+    @apply min-w-0 rounded-2xl border border-line bg-surface p-5 max-sm:p-4;
+  }
+  .dashboard-chart-card {
+    @apply flex h-[300px] w-[300px] max-w-full flex-col p-4;
+  }
+  .dashboard-chart-card .dashboard-empty-chart {
+    @apply min-h-0 flex-1;
+  }
+  .dashboard-panel-heading {
+    @apply flex items-start justify-between gap-3;
+  }
+  .dashboard-panel-heading h2 {
+    @apply text-sm font-semibold tracking-tight;
+  }
+  .dashboard-panel-heading p {
+    @apply mt-1 text-[11px] text-muted;
+  }
+  .dashboard-chart-badge {
+    @apply shrink-0 rounded-lg bg-brand-tint px-2.5 py-1 text-xs text-ink;
+  }
+  .dashboard-chart-readout {
+    @apply mt-3 mb-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-muted;
+  }
+  .dashboard-chart-readout strong {
+    @apply text-base font-semibold text-ink;
+  }
+  .dashboard-revenue-chart {
+    @apply block min-h-0 w-full flex-1 overflow-visible;
+  }
+  .dashboard-revenue-chart text {
+    fill: var(--muted);
+    font-size: 10px;
+  }
+  .dashboard-grid-line {
+    stroke: var(--line);
+    stroke-dasharray: 4 5;
+  }
+  .dashboard-revenue-line {
+    fill: none;
+    stroke: var(--brand);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .dashboard-guide-line {
+    stroke: var(--line-strong);
+    stroke-dasharray: 4 4;
+  }
+  .dashboard-chart-point {
+    fill: var(--brand);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .dashboard-donut-wrap {
+    @apply relative mx-auto mt-3 mb-0 aspect-square min-h-0 w-full max-w-[210px];
+  }
+  .dashboard-donut {
+    @apply block w-full;
+  }
+  .dashboard-donut circle {
+    transition: stroke-width 150ms ease, opacity 150ms ease;
+  }
+  .dashboard-donut-center {
+    @apply pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 px-10 text-center;
+  }
+  .dashboard-donut-center span {
+    @apply max-h-20 overflow-y-auto text-[11px] leading-tight text-muted wrap-anywhere;
+  }
+  .dashboard-donut-center strong {
+    @apply text-base leading-snug font-semibold wrap-anywhere;
+  }
+  .dashboard-donut circle:focus-visible {
+    outline: none;
+    stroke-width: 28;
+  }
+  .dashboard-footnote {
+    @apply mt-5 flex flex-wrap justify-between gap-3 text-xs leading-relaxed text-muted;
+  }
+  .dashboard-footnote p {
+    @apply max-w-2xl;
+  }
+  .dashboard-loading {
+    @apply flex min-h-64 items-center justify-center gap-3 text-sm text-muted;
+  }
+  .dashboard-loading-dot {
+    @apply size-3 animate-pulse rounded-full bg-brand motion-reduce:animate-none;
+  }
+  .dashboard-no-sales {
+    @apply mb-5 rounded-xl bg-brand-tint px-4 py-3 text-sm;
+  }
+  .dashboard-empty-chart {
+    @apply flex min-h-72 flex-col items-center justify-center gap-3 text-center text-sm text-muted;
+  }
+  .dashboard-empty-chart > span {
+    @apply text-6xl text-brand;
+  }
+  .dashboard-empty-chart h2 {
+    @apply text-lg font-semibold text-ink;
+  }
+  .dashboard-page :is(button, select, summary, .dashboard-revenue-chart):focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-donut circle {
+      transition: none;
+    }
+  }
+}

@@ -20,7 +20,7 @@ type Props = Pick<
     | "setCartError"
     | "setSavedTotal"
 > &
-    Pick<CashierPOSProps, "sessionId" | "snapshot" | "busy" | "error" | "logout" | "run">;
+    Pick<CashierPOSProps, "sessionId" | "snapshot" | "busy" | "error" | "refresh" | "logout" | "run">;
 
 export function CashierDialogs({
     draft,
@@ -38,6 +38,7 @@ export function CashierDialogs({
     snapshot,
     busy,
     error,
+    refresh,
     logout,
     run,
 }: Props) {
@@ -129,6 +130,7 @@ export function CashierDialogs({
                         if (!busy) setDialog(null);
                     }}
                 >
+                    <p className={ui.muted}>{snapshot.cashier.name}</p>
                     {error && (
                         <p className={ui.error} role="alert">
                             {error}
@@ -183,7 +185,7 @@ export function CashierDialogs({
                                     void run(async () => {
                                         await terminalRequest({
                                             action: "close_shift",
-                                        sessionId,
+                                            sessionId,
                                             shift_id: snapshot.shift!.id,
                                             closing_cash: Number(closingCash),
                                         });
@@ -218,6 +220,14 @@ export function CashierDialogs({
                     ) : (
                         <p>Смена открыта кассиром {snapshot.shift.cashier_name}. Дождитесь её закрытия.</p>
                     )}
+                    <div className="dialog-actions">
+                        <button className={ui.button} disabled={busy} onClick={() => void refresh()}>
+                            Обновить данные
+                        </button>
+                        <button className={ui.button} disabled={busy} onClick={() => setDialog("logout")}>
+                            Выйти
+                        </button>
+                    </div>
                 </TerminalDialog>
             )}
             {dialog === "history" && (

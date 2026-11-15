@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useCashierSession } from "../auth/session";
 import { terminalRequest } from "../lib/cashierTerminal";
 import { ui } from "../../shared/lib/ui";
+import { TerminalPairing } from "../components/TerminalPairing";
 
 export default function CashierLoginPage({ ownerAppUrl }: { ownerAppUrl?: string }) {
     const { setCashierSession } = useCashierSession();
@@ -38,6 +39,7 @@ export default function CashierLoginPage({ ownerAppUrl }: { ownerAppUrl?: string
     return (
         <main className="login-page">
             <section className="login-card">
+                <TerminalPairing />
                 <span className={ui.eyebrow}>РАБОЧЕЕ МЕСТО КАССИРА</span>
                 <h1 className={ui.title}>Вход кассира</h1>
                 <p>Введите имя и PIN, выданные владельцем магазина.</p>

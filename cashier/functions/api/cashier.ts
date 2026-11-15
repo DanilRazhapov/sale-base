@@ -9,9 +9,16 @@ type TerminalReply = {
     expires_at?: string;
 };
 
+
 const cookieName = "__Secure-salebase_cashier";
+const deviceCookieName = "__Secure-salebase_device";
 const cookieOptions = "Path=/api/cashier; HttpOnly; Secure; SameSite=Strict";
 const tokenPattern = /^[0-9a-f]{64}$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 function reply(body: object, status = 200, cookie?: string) {
     const headers = new Headers({ "Cache-Control": "no-store" });
@@ -24,6 +31,11 @@ function sessionCookie(token: string, expiresAt: unknown) {
     const maxAge = Math.floor((expiration - Date.now()) / 1000);
     if (!Number.isFinite(maxAge) || maxAge <= 0) return;
     return `${cookieName}=${token}; ${cookieOptions}; Max-Age=${maxAge}`;
+}
+
+function deviceCookie(token: string) {
+    const maxAge = 15552000;
+    return `${deviceCookieName}=${token}; ${cookieOptions}; Max-Age=${maxAge}`;
 }
 
 async function sessionId(token: string) {
@@ -56,16 +68,20 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
 
     delete fields.token;
 
-    const cookieToken = request.headers.get("Cookie")
+    const cashierCookieToken = request.headers.get("Cookie")
         ?.split(/;\s*/).find((cookie) => cookie.startsWith(`${cookieName}=`))
         ?.slice(cookieName.length + 1);
-    const migrating = action === "snapshot" && !cookieToken && typeof legacyToken === "string";
-    const token = cookieToken ?? (migrating ? legacyToken : "");
+    const cashierMigrating = action === "snapshot" && !cashierCookieToken && typeof legacyToken === "string";
+    const cashierToken = cashierCookieToken ?? (cashierMigrating ? legacyToken : "");
+
+    const deviceCookieToken = request.headers.get("Cookie")
+        ?.split(/;\s*/).find((cookie) => cookie.startsWith(`${deviceCookieName}=`))
+        ?.slice(deviceCookieName.length + 1);
 
     let currentSession: string | undefined;
-    if (action !== "login") {
-        if (!tokenPattern.test(token)) return reply({ error: "Войдите как кассир." }, 401);
-        currentSession = await sessionId(token);
+    if (action !== "login" && action !== "pairing" && action !== "device") {
+        if (!tokenPattern.test(cashierToken)) return reply({ error: "Войдите как кассир." }, 401);
+        currentSession = await sessionId(cashierToken);
         if (
             action !== "snapshot" &&
             !(action === "logout" && expectedSession === undefined) &&
@@ -79,6 +95,63 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     if (!url || !key) return reply({ error: "Кассовый API не настроен." }, 503);
 
     try {
+        if (action === "pairing") {
+            const { code, name } = body;
+            
+            if (typeof code !== "string" || !/^\d{7}$/.test(code)) {
+                return reply({ error: "Неверный код подключения." }, 400);
+            }
+            if (typeof name !== "string" || name.trim().length < 1 || name.trim().length > 120) {
+                return reply({ error: "Неверное имя терминала." }, 400);
+            }
+
+            const upstream = await fetch(`${url.replace(/\/$/, "")}/functions/v1/redeem-terminal-pairing-code`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    apikey: key,
+                    Authorization: request.headers.get("Authorization") ?? `Bearer ${key}`,
+                },
+                body: JSON.stringify({ code, name: name.trim() }),
+                redirect: "error",
+            });
+            
+            const result: unknown = await upstream.json();
+
+            if (!upstream.ok) {
+                const error = isRecord(result) && typeof result.error === "string"
+                    ? result.error : "Не удалось подключить терминал.";
+                const response = reply({ error }, upstream.status);
+                if (upstream.status === 429) response.headers.set("Retry-After", "60");
+                return response;
+            }
+            if (!isRecord(result)) {
+                return reply({ error: "Сервис вернул некорректный ответ подключения." }, 502);
+            }
+
+            const { token: deviceToken, device } = result;
+            if (typeof deviceToken !== "string" || !tokenPattern.test(deviceToken)) {
+                return reply({ error: "Сервис вернул некорректный токен устройства." }, 502);
+            }
+            if (!isRecord(device) ||
+                typeof device.id !== "string" || !uuidPattern.test(device.id) ||
+                typeof device.store_id !== "string" || !uuidPattern.test(device.store_id) ||
+                typeof device.name !== "string" || device.name.trim().length < 1 || device.name.trim().length > 120
+            ) {
+                return reply({ error: "Сервис вернул некорректные данные терминала." }, 502);
+            }
+
+            const cookie = deviceCookie(deviceToken);
+
+            return reply({ device: { id: device.id, store_id: device.store_id, name: device.name.trim() } }, 201, cookie);
+        }
+
+        if (action === "login" || action === "device"){
+            if (!deviceCookieToken || !tokenPattern.test(deviceCookieToken)) return reply(
+                { error: "Сначала привяжите кассу к магазину." }, 401
+            );
+        }
+
         const upstream = await fetch(`${url.replace(/\/$/, "")}/functions/v1/cashier-terminal`, {
             method: "POST",
             headers: {
@@ -86,7 +159,9 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
                 apikey: key,
                 Authorization: request.headers.get("Authorization") ?? `Bearer ${key}`,
             },
-            body: JSON.stringify(action === "login" ? { action, ...fields } : { action, ...fields, token }),
+            body: JSON.stringify(action === "login" || action === "device"
+                ? { action, ...fields, device_token: deviceCookieToken }
+                : { action, ...fields, token: cashierToken }),
             redirect: "error",
         });
         const result = await upstream.json() as TerminalReply | null;
@@ -106,8 +181,8 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
         }
         if (action === "snapshot") {
             if (!result.data) return reply({ error: "Сервис не вернул данные кассы." }, 502);
-            const cookie = migrating ? sessionCookie(token, result?.data?.expires_at) : undefined;
-            if (migrating && !cookie) return reply({ error: "Срок действия сессии истёк." }, 401);
+            const cookie = cashierMigrating ? sessionCookie(cashierToken, result?.data?.expires_at) : undefined;
+            if (cashierMigrating && !cookie) return reply({ error: "Срок действия сессии истёк." }, 401);
             return reply({ data: result.data, sessionId: currentSession }, 200, cookie);
         }
         return reply(result);

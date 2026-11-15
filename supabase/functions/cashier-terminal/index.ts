@@ -31,13 +31,38 @@ export default {
         if (data.user) return json({ error: "Вы вошли как владелец. Выйдите из кабинета перед входом кассира." }, 403);
       }
       const { action } = body;
-      if (action === "login") {
+      if (action === "login" || action === "device") {
+        if (typeof body.device_token !== "string" || !/^[0-9a-f]{64}$/.test(body.device_token)) {
+          return json({ error: "Сначала привяжите кассу к магазину." }, 401);
+        }
+        const deviceHashToken = await hashToken(body.device_token);
+        const { data: devices, error: deviceError } = await ctx.supabaseAdmin.rpc("resolve_terminal_device", {
+          p_token_hash: deviceHashToken,
+        });
+        if (deviceError) throw deviceError;
+        if (!Array.isArray(devices)) {
+          return json({ error: "Неожиданный ответ сервиса." }, 502);
+        }
+        if (devices.length === 0) {
+          return json({ error: "Привязка не найдена или отозвана." }, 401);
+        }
+        if (devices.length !== 1 || !devices[0] || typeof devices[0].store_id !== "string") {
+          return json({ error: "Неожиданный ответ сервиса." }, 502);
+        }
+        const device = devices[0];
+        if (action === "device") {
+          const { data: store, error: storeError } = await ctx.supabaseAdmin
+            .from("stores").select("id, name").eq("id", device.store_id).eq("is_active", true).maybeSingle();
+          if (storeError) throw storeError;
+          if (!store) return json({ error: "Магазин недоступен." }, 401);
+          return json({ device: { id: device.id, name: device.name, store_id: device.store_id }, store });
+        }
         if (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 120 ||
           typeof body.pin !== "string" || !/^\d{4,12}$/.test(body.pin)) {
           return json({ error: "Введите имя кассира и PIN (4–12 цифр)." }, 400);
         }
         const { data: candidates, error } = await ctx.supabaseAdmin.rpc("cashier_login_attempt", {
-          p_name: body.name.trim(),
+          p_name: body.name.trim(), p_store_id: device.store_id,
         });
         if (error) throw error;
         const cashier = await findCashierByPin<{ id: string; pin_hash: string }>(body.pin, candidates ?? []);
@@ -46,7 +71,7 @@ export default {
         }
         const token = createToken();
         const { data: expiresAt, error: sessionError } = await ctx.supabaseAdmin.rpc("cashier_create_session", {
-          p_cashier_id: cashier.id, p_token_hash: await hashToken(token),
+          p_cashier_id: cashier.id, p_token_hash: await hashToken(token), p_device_id: device.id,
         });
         if (sessionError) throw sessionError;
         return json({ token, expires_at: expiresAt });

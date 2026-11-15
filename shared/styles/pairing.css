@@ -1,0 +1,22 @@
+/* Scoped additions shared by the owner and cashier pairing dialogs. */
+.pairing-dialog { max-width: 560px; }
+.pairing-dialog > .ui-muted { margin: 0 0 1rem; overflow-wrap: anywhere; }
+.pairing-panel { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface-soft); }
+.pairing-panel > p { margin: .65rem 0 1rem; font-size: .875rem; }
+.pairing-code-box { display: grid; justify-items: center; gap: .75rem; margin: 1rem 0; padding: 1.25rem .5rem; border: 1px dashed var(--brand); border-radius: .75rem; background: var(--surface); }
+.pairing-code { font-size: clamp(1.8rem, 7vw, 2.75rem); letter-spacing: .12em; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pairing-code-box p { margin: 0; font-size: .875rem; font-variant-numeric: tabular-nums; }
+.pairing-hint { color: var(--muted); font-size: .75rem !important; }
+.pairing-list-heading { margin: 1.5rem 0 .75rem; flex-wrap: wrap; }
+.pairing-devices { list-style: none; margin: 0; padding: 0; }
+.pairing-devices li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .85rem 0; border-bottom: 1px solid var(--line); }
+.pairing-devices li > div { min-width: 0; }
+.pairing-devices strong { overflow-wrap: anywhere; }
+.pairing-devices small { display: block; margin-top: .25rem; color: var(--muted); }
+.pairing-login-status { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.pairing-login-status > div { min-width: 0; }
+.pairing-login-status strong { display: block; font-size: .875rem; overflow-wrap: anywhere; }
+.pairing-login-status small { display: block; color: var(--muted); font-size: .75rem; }
+.pairing-login-status button { flex-shrink: 0; font-size: .75rem; }
+.pairing-code-input { text-align: center; font-size: 1.5rem; font-variant-numeric: tabular-nums; letter-spacing: .2em; }
+@media (max-width: 380px) { .pairing-login-status { align-items: stretch; flex-direction: column; } }

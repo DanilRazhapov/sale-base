@@ -414,6 +414,18 @@ enabled = true
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
+[functions.redeem-terminal-pairing-code]
+enabled = true
+verify_jwt = false
+import_map = "./functions/redeem-terminal-pairing-code/deno.json"
+entrypoint = "./functions/redeem-terminal-pairing-code/index.ts"
+
+[functions.create-terminal-pairing-code]
+enabled = true
+verify_jwt = true
+import_map = "./functions/create-terminal-pairing-code/deno.json"
+entrypoint = "./functions/create-terminal-pairing-code/index.ts"
+
 [functions.cashier-terminal]
 enabled = true
 # PIN/session authentication is performed inside the function, independently of owner JWTs.

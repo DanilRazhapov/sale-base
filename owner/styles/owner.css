@@ -9,19 +9,63 @@
     @apply relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4 max-sm:px-3;
   }
   .owner-body {
-    @apply grid min-h-0 flex-1 grid-cols-[12rem_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)];
+    @apply grid min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)];
   }
   .owner-sidebar {
     @apply overflow-y-auto border-r border-line bg-surface p-3 max-md:max-h-[40dvh] max-md:border-r-0 max-md:border-b;
   }
   .owner-sidebar nav {
-    @apply flex flex-col gap-1 max-md:flex-row max-md:flex-wrap;
+    @apply flex flex-col gap-1;
   }
   .owner-sidebar a {
-    @apply rounded-lg px-3 py-2.5 text-sm font-semibold text-muted hover:bg-surface-soft aria-[current=page]:bg-brand-soft aria-[current=page]:text-brand;
+    @apply relative flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted hover:bg-surface-soft aria-[current=page]:bg-brand-tint aria-[current=page]:text-ink aria-[current=true]:bg-brand-tint aria-[current=true]:text-ink;
+    transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
   }
-  .owner-sidebar span[aria-disabled="true"] {
-    @apply cursor-default rounded-lg px-3 py-2.5 text-sm font-semibold text-muted opacity-60;
+  .owner-sidebar a:active {
+    transform: scale(0.96);
+  }
+  .owner-sidebar a:focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+  .owner-nav-disabled {
+    @apply flex cursor-default items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted opacity-60;
+  }
+  .owner-nav-icon {
+    @apply size-5 shrink-0;
+  }
+  .owner-nav-group {
+    @apply mt-3 flex min-w-0 flex-col gap-1 border-t border-line pt-3;
+  }
+  .owner-nav-label {
+    @apply px-3 pb-1 text-xs font-semibold tracking-wide text-muted;
+  }
+  .owner-nav-stores {
+    @apply flex flex-col gap-1 max-md:flex-row max-md:overflow-x-auto max-md:pb-1;
+  }
+  .owner-nav-stores a {
+    @apply max-md:max-w-64 max-md:shrink-0;
+  }
+  .owner-nav-store-name {
+    @apply min-w-0 wrap-anywhere max-md:truncate;
+  }
+  .owner-nav-status {
+    @apply px-3 py-2 text-xs leading-relaxed text-muted;
+  }
+  @media (width < 48rem) {
+    .owner-nav-group:not(:has(.owner-nav-stores)) {
+      @apply flex-row flex-wrap;
+    }
+    .owner-nav-label {
+      @apply w-full;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .owner-sidebar a {
+      transition: none;
+    }
+    .owner-sidebar a:active {
+      transform: none;
+    }
   }
   .owner-content {
     @apply flex min-h-0 min-w-0 flex-col overflow-auto;
