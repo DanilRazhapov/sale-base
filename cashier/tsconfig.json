@@ -3,5 +3,5 @@
   "compilerOptions": {
     "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.cashier.tsbuildinfo"
   },
-  "include": ["**/*.tsx", "auth/**/*.ts", "components/**/*.ts", "lib/**/*.ts"]
+  "include": ["**/*.tsx", "auth/**/*.ts", "components/**/*.ts", "lib/**/*.ts", "worker.ts", "functions/**/*.ts"]
 }

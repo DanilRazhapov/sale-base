@@ -9,6 +9,7 @@
     "dev:owner": "vite --config owner/vite.config.ts",
     "build": "npm run build:cashier && npm run build:owner",
     "build:cashier": "tsc -b cashier && vite build --config cashier/vite.config.ts",
+    "deploy:cashier": "npm run build:cashier && npx wrangler deploy --config cashier/.deploy/wrangler.json",
     "build:owner": "tsc -b owner && vite build --config owner/vite.config.ts",
     "typecheck": "tsc -b",
     "lint": "eslint .",
