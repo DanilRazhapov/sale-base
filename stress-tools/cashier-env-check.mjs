@@ -34,6 +34,7 @@ assert.equal(configured.status, 401, 'Configured Worker must reach device author
 const originalFetch = globalThis.fetch
 try {
   globalThis.fetch = async (url, options) => {
+    assert.equal(options.redirect, 'manual', 'Cloudflare Workers supports only follow/manual redirects')
     assert.equal(url, `${config.vars.VITE_SUPABASE_URL.replace(/\/$/, '')}/functions/v1/redeem-terminal-pairing-code`)
     assert.equal(options.headers.apikey, config.vars.VITE_SUPABASE_PUBLISHABLE_KEY)
     return Response.json({ error: 'test upstream response' }, { status: 400 })
@@ -41,6 +42,23 @@ try {
   const upstream = await worker.fetch(request({ action: 'pairing', code: '1234567', name: 'Test' }), config.vars)
   assert.equal(upstream.status, 400)
   assert.equal((await upstream.json()).error, 'test upstream response')
+
+  let redirectCalls = 0
+  globalThis.fetch = async (_url, options) => {
+    assert.equal(options.redirect, 'manual')
+    redirectCalls++
+    return new Response(null, { status: 307, headers: { Location: 'https://other.example/' } })
+  }
+  for (const body of [{ action: 'pairing', code: '1234567', name: 'Test' }, { action: 'device' }]) {
+    const req = request(body)
+    req.headers.set('Cookie', '__Secure-salebase_device=' + 'a'.repeat(64))
+    const response = await worker.fetch(req, config.vars)
+    assert.equal(response.status, 502)
+    const result = await response.json()
+    assert.equal(result.code, 'CASHIER_UPSTREAM_REDIRECT')
+    assert.equal(result.upstream_status, 307)
+  }
+  assert.equal(redirectCalls, 2, 'Redirects must not trigger another request with credentials')
 
   for (const [mock, code, status] of [
     [async () => { throw new TypeError('fetch failed') }, 'CASHIER_UPSTREAM_FETCH_FAILED', 502],

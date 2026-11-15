@@ -39,8 +39,10 @@ class UpstreamError extends Error {
 }
 
 async function requestSupabase(url: string, options: RequestInit) {
+    let response: Response;
     try {
-        return await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+        // Workers rejects redirect: "error" before sending any request.
+        response = await fetch(url, { ...options, redirect: "manual", signal: AbortSignal.timeout(15000) });
     } catch (error) {
         const timeout = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
         throw new UpstreamError(
@@ -48,6 +50,14 @@ async function requestSupabase(url: string, options: RequestInit) {
             timeout ? "Supabase не ответил за 15 секунд." : "Worker не смог подключиться к Supabase.",
         );
     }
+    if (response.status >= 300 && response.status < 400) {
+        throw new UpstreamError(
+            "CASHIER_UPSTREAM_REDIRECT",
+            `Supabase вернул перенаправление (HTTP ${response.status}). Проверьте URL проекта.`,
+            response.status,
+        );
+    }
+    return response;
 }
 
 async function readSupabaseReply(response: Response): Promise<unknown> {
@@ -166,7 +176,6 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
                     Authorization: request.headers.get("Authorization") ?? `Bearer ${key}`,
                 },
                 body: JSON.stringify({ code, name: name.trim() }),
-                redirect: "error",
             });
             
             const result = await readSupabaseReply(upstream);
@@ -215,7 +224,6 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
             body: JSON.stringify(action === "login" || action === "device"
                 ? { action, ...fields, device_token: deviceCookieToken }
                 : { action, ...fields, token: cashierToken }),
-            redirect: "error",
         });
         const result = await readSupabaseReply(upstream) as TerminalReply | null;
         if (!upstream.ok) {
