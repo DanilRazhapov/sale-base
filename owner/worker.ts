@@ -1,5 +1,9 @@
 type Env = {
   PRODUCT_IMAGES: {
+    get(key: string): Promise<{
+      body: ReadableStream;
+      httpEtag: string;
+    } | null>;
     put(
       key: string,
       data: ArrayBuffer,
@@ -259,6 +263,33 @@ export default {
     const path = new URL(request.url).pathname;
 
     if (path === "/api/product-image") {
+      if (request.method === "GET") {
+        const key = new URL(request.url).searchParams.get("key") ?? "";
+        // Only serve product images, never arbitrary objects from this bucket.
+        const imageKey = /^stores\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/products\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$/;
+        const match = imageKey.exec(key);
+        if (!match) return reply({ error: "Некорректный ключ фотографии." }, 400);
+        if (!env.PRODUCT_IMAGES?.get) {
+          return reply({ error: "Хранилище фотографий не настроено." }, 503);
+        }
+        try {
+          const object = await env.PRODUCT_IMAGES.get(key);
+          if (!object) return reply({ error: "Фотография не найдена." }, 404);
+          const headers = new Headers({
+            "Content-Type": match[1] === "jpg" ? "image/jpeg" : `image/${match[1]}`,
+            "Cache-Control": "public, max-age=86400, immutable",
+            "ETag": object.httpEtag,
+            "X-Content-Type-Options": "nosniff",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+          });
+          if (request.headers.get("If-None-Match") === object.httpEtag) {
+            return new Response(null, { status: 304, headers });
+          }
+          return new Response(object.body, { headers });
+        } catch {
+          return reply({ error: "Не удалось прочитать фотографию из R2." }, 502);
+        }
+      }
       if (request.method !== "POST") {
         return reply({ error: "Method not allowed" }, 405);
       }

@@ -10,6 +10,42 @@ type Props = Pick<CashierPOSState, "lines" | "kind" | "ownShift" | "locked" | "c
 
 const operationKinds: CartKind[] = ["sale", "receipt", "writeoff"];
 
+function ProductImage({ imageKey }: { imageKey?: string | null }) {
+    const ownerOrigin = import.meta.env.VITE_OWNER_APP_URL?.trim() ||
+        (import.meta.env.DEV ? "http://localhost:5174" : "");
+    const src = imageKey && ownerOrigin
+        ? new URL(`/api/product-image?key=${encodeURIComponent(imageKey)}`, ownerOrigin).href
+        : null;
+    const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+    return (
+        <span className="pos-product-placeholder" aria-hidden="true">
+            {src && failedSrc !== src ? (
+                <img
+                    src={src}
+                    alt=""
+                    className="pos-product-image"
+                    loading="lazy"
+                    decoding="async"
+                    onError={() => setFailedSrc(src)}
+                />
+            ) : (
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <path d="m12 3 9 4.5v9L12 21l-9-4.5v-9L12 3Z" />
+                    <path d="M3 7.5 12 12l9-4.5M12 12v9M7.5 5.25l9 4.5" />
+                </svg>
+            )}
+        </span>
+    );
+}
+
 export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add, snapshot }: Props) {
     const [category, setCategory] = useState("all");
     const [search, setSearch] = useState("");
@@ -180,26 +216,14 @@ export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add,
                                     onClick={() => add(product)}
                                 >
                                     <span className="pos-product-media">
-                                        <span className="pos-product-placeholder" aria-hidden="true">
-                                            <svg
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.5"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <path d="m12 3 9 4.5v9L12 21l-9-4.5v-9L12 3Z" />
-                                                <path d="M3 7.5 12 12l9-4.5M12 12v9M7.5 5.25l9 4.5" />
-                                            </svg>
-                                            <span
-                                                className="pos-product-quantity"
-                                                key={selected?.quantity || "+"}
-                                                data-selected={!!selected}
-                                                aria-hidden="true"
-                                            >
-                                                {selected?.quantity || "+"}
-                                            </span>
+                                        <ProductImage imageKey={product.image_key} />
+                                        <span
+                                            className="pos-product-quantity"
+                                            key={selected?.quantity || "+"}
+                                            data-selected={!!selected}
+                                            aria-hidden="true"
+                                        >
+                                            {selected?.quantity || "+"}
                                         </span>
                                     </span>
                                     <strong title={product.name}>{product.name}</strong>

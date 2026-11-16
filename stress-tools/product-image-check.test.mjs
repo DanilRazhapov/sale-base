@@ -2,6 +2,46 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import worker from "../owner/worker.ts";
 
+const imageKey = "stores/11111111-1111-4111-8111-111111111111/products/22222222-2222-4222-8222-222222222222/33333333-3333-4333-8333-333333333333.png";
+
+test("GET streams an image for cross-origin cashier cards without owner auth", async () => {
+  const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  const env = { PRODUCT_IMAGES: { async get(key) {
+    assert.equal(key, imageKey);
+    return { body: new Response(bytes).body, httpEtag: '"image-etag"' };
+  } } };
+  const response = await worker.fetch(new Request(`https://owner.example/api/product-image?key=${encodeURIComponent(imageKey)}`), env);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "image/png");
+  assert.equal(response.headers.get("Cross-Origin-Resource-Policy"), "cross-origin");
+  assert.match(response.headers.get("Cache-Control"), /immutable/);
+  assert.deepEqual(new Uint8Array(await response.arrayBuffer()), bytes);
+});
+
+test("GET rejects arbitrary bucket keys before accessing R2", async () => {
+  const env = { PRODUCT_IMAGES: { async get() { assert.fail("R2 must not be read"); } } };
+  for (const key of ["", "private/document.pdf", "stores/../secret.png", imageKey.replace(".png", ".svg")]) {
+    const response = await worker.fetch(new Request(`https://owner.example/api/product-image?key=${encodeURIComponent(key)}`), env);
+    assert.equal(response.status, 400);
+  }
+});
+
+test("GET returns 404 for deleted images", async () => {
+  const response = await worker.fetch(new Request(`https://owner.example/api/product-image?key=${encodeURIComponent(imageKey)}`), {
+    PRODUCT_IMAGES: { async get() { return null; } },
+  });
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+});
+
+test("GET revalidates cached images using ETag", async () => {
+  const response = await worker.fetch(new Request(`https://owner.example/api/product-image?key=${encodeURIComponent(imageKey)}`, {
+    headers: { "If-None-Match": '"image-etag"' },
+  }), { PRODUCT_IMAGES: { async get() { return { body: null, httpEtag: '"image-etag"' }; } } });
+  assert.equal(response.status, 304);
+  assert.equal(await response.text(), "");
+});
+
 const storeId = "11111111-1111-4111-8111-111111111111";
 const productId = "22222222-2222-4222-8222-222222222222";
 const oldKey = `stores/${storeId}/products/${productId}/old.png`;

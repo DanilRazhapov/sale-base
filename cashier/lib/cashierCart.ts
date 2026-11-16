@@ -5,6 +5,7 @@ export type TerminalProduct = {
     price: number | null;
     unit: string | null;
     category_id: number | null;
+    image_key?: string | null;
 };
 export type TerminalSnapshot = {
     store: { id: string; name: string };
