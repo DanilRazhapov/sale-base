@@ -11,6 +11,7 @@
     "build:cashier": "tsc -b cashier && vite build --config cashier/vite.config.ts",
     "deploy:cashier": "npm run build:cashier && npx wrangler deploy --config cashier/.deploy/wrangler.json",
     "build:owner": "tsc -b owner && vite build --config owner/vite.config.ts",
+    "deploy:owner": "npm run build:owner && wrangler deploy --config owner/.deploy/wrangler.json",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "npm run preview:cashier",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
+    "@cloudflare/vite-plugin": "^1.69.1",
     "@eslint/js": "^10.0.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",
@@ -45,6 +47,7 @@
     "prettier": "^3.9.10",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.69.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "wrangler": "^4.163.0"
   }
 }

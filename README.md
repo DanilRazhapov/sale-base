@@ -29,6 +29,37 @@ npm run dev:owner
 
 Если нужно проверить переход из кассы в кабинет, задайте `VITE_OWNER_APP_URL=http://localhost:5174` перед запуском dev-сервера кассы или `VITE_OWNER_APP_URL=http://localhost:6174` перед сборкой для preview.
 
+## API фотографий Owner
+
+`npm run dev:owner` запускает Vite вместе с Cloudflare Worker: запросы
+`/api/product-image` обрабатываются тем же `owner/worker.ts`, что и в production.
+Публичные настройки Supabase берутся из `frontend/.env.local`.
+После обновления зависимостей перезапустите dev-сервер.
+
+R2 в режиме разработки эмулируется локально; фотографии из localhost не появятся
+в облачном бакете `salebase`. Используйте тестовый проект Supabase, чтобы ключи
+локальных фотографий не попадали в рабочий каталог.
+
+Для публикации Owner как Cloudflare Worker из `frontend` выполните:
+
+```powershell
+npm run deploy:owner
+```
+
+Сборка создаёт `owner/.deploy/wrangler.json` с binding `PRODUCT_IMAGES` и двумя
+публичными параметрами Supabase, необходимыми серверному обработчику.
+Команда деплоя использует этот файл. При публикации через Cloudflare CI задайте
+`VITE_SUPABASE_URL` и `VITE_SUPABASE_PUBLISHABLE_KEY` в окружении сборки и используйте
+`npm run deploy:owner` как команду публикации. Если публикуете непосредственно
+`owner/wrangler.jsonc`, эти два параметра нужно отдельно задать в runtime Variables
+Worker. Переменные сборки Vite автоматически там не появляются.
+
+Проверка обработчика без обращения к рабочей базе:
+
+```powershell
+node --test stress-tools/product-image-check.test.mjs
+```
+
 ## Стили
 
 Оба приложения используют Tailwind CSS v4. Общая палитра находится в `shared/styles/theme.css`, а семантические цвета Tailwind заданы в `tailwind.config.js`. Общие классы полей, кнопок и заголовков находятся в `shared/lib/ui.ts`. Стили кассы находятся в `cashier/styles`, стили кабинета — в `owner/styles`.
