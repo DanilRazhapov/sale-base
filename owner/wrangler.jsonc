@@ -1,7 +1,7 @@
 {
   "name": "salebase-owner",
   "compatibility_date": "2026-11-15",
-  "main": "./worker/ts",
+  "main": "./worker.ts",
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
