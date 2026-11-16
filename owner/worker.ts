@@ -185,38 +185,36 @@ async function uploadImage(request: Request, env: Env) {
     uploaded = true;
 
     // Сохраняем ключ только после успешной загрузки.
-    const updateUrl = new URL("/rest/v1/products", base);
-    updateUrl.searchParams.set("store_id", `eq.${storeId}`);
-    updateUrl.searchParams.set("id", `eq.${productId}`);
-    updateUrl.searchParams.set(
-      "image_key",
-      oldKey === null ? "is.null" : `eq.${oldKey}`,
-    );
-    updateUrl.searchParams.set("select", "id,image_key");
-
     const updateResponse = await sb(
-      updateUrl.pathname + updateUrl.search,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Prefer": "return=representation",
-        },
-        body: JSON.stringify({ image_key: newKey }),
-      },
-    );
+  "/rest/v1/rpc/set_store_product_image",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      p_store_id: storeId,
+      p_product_id: productId,
+      p_expected_image_key: oldKey,
+      p_new_image_key: newKey,
+    }),
+  },
+);
 
-    const updated = updateResponse.ok
-      ? await updateResponse.json() as unknown[]
-      : [];
+const updated = updateResponse.ok
+  && (await updateResponse.json()) === true;
 
-    if (!updateResponse.ok || updated.length !== 1) {
-      await env.PRODUCT_IMAGES.delete(newKey);
-      uploaded = false;
-      return reply({
-        error: "Не удалось сохранить фото в карточке товара. Обновите данные.",
-      }, updateResponse.ok ? 409 : 502);
-    }
+if (!updated) {
+  await env.PRODUCT_IMAGES.delete(newKey);
+  uploaded = false;
+
+  return reply(
+    {
+      error: "Не удалось сохранить фото. Обновите данные.",
+    },
+    updateResponse.ok ? 409 : 502,
+  );
+}
 
     // Старая фотография больше не используется.
     if (oldKey && oldKey.startsWith(`stores/${storeId}/products/${productId}/`)) {
