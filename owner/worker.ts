@@ -55,6 +55,12 @@ async function uploadImage(request: Request, env: Env) {
     return reply({ error: "API изображений не настроен." }, 503);
   }
 
+  if (!env.PRODUCT_IMAGES || typeof env.PRODUCT_IMAGES.put !== "function") {
+    return reply({
+      error: "Хранилище фотографий не настроено: подключите R2-бакет salebase с binding PRODUCT_IMAGES к Worker Owner.",
+    }, 503);
+  }
+
   if (request.headers.get("Origin") !== new URL(request.url).origin) {
     return reply({ error: "Недопустимое происхождение запроса." }, 403);
   }
@@ -176,45 +182,54 @@ async function uploadImage(request: Request, env: Env) {
     `stores/${storeId}/products/${productId}/` +
     `${crypto.randomUUID()}.${detected.ext}`;
 
-  let uploaded = false;
-
   try {
     await env.PRODUCT_IMAGES.put(newKey, buffer, {
       httpMetadata: { contentType: detected.mime },
     });
-    uploaded = true;
+  } catch {
+    return reply({ error: "Не удалось записать фотографию в R2. Проверьте доступ Worker Owner к бакету salebase." }, 502);
+  }
 
+  let uploaded = true;
+
+  try {
     // Сохраняем ключ только после успешной загрузки.
     const updateResponse = await sb(
-  "/rest/v1/rpc/set_store_product_image",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      p_store_id: storeId,
-      p_product_id: productId,
-      p_expected_image_key: oldKey,
-      p_new_image_key: newKey,
-    }),
-  },
-);
+      "/rest/v1/rpc/set_store_product_image",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          p_store_id: storeId,
+          p_product_id: productId,
+          p_expected_image_key: oldKey,
+          p_new_image_key: newKey,
+        }),
+      },
+    );
 
-const updated = updateResponse.ok
-  && (await updateResponse.json()) === true;
+    const updated = updateResponse.ok
+      && (await updateResponse.json()) === true;
 
-if (!updated) {
-  await env.PRODUCT_IMAGES.delete(newKey);
-  uploaded = false;
+    if (!updated) {
+      try {
+        await env.PRODUCT_IMAGES.delete(newKey);
+      } catch {
+        // Ошибка очистки не должна скрывать причину отказа Supabase.
+      }
+      uploaded = false;
 
-  return reply(
-    {
-      error: "Не удалось сохранить фото. Обновите данные.",
-    },
-    updateResponse.ok ? 409 : 502,
-  );
-}
+      return reply(
+        {
+          error: updateResponse.ok
+            ? "Фотография товара уже изменена. Обновите данные и повторите загрузку."
+            : `Не удалось сохранить ключ фотографии в Supabase (HTTP ${updateResponse.status}). Проверьте SQL-функцию set_store_product_image.`,
+        },
+        updateResponse.ok ? 409 : 502,
+      );
+    }
 
     // Старая фотография больше не используется.
     if (oldKey && oldKey.startsWith(`stores/${storeId}/products/${productId}/`)) {
@@ -235,7 +250,7 @@ if (!updated) {
       }
     }
 
-    return reply({ error: "Не удалось загрузить фотографию." }, 502);
+    return reply({ error: "Ошибка связи с Supabase при сохранении ключа фотографии." }, 502);
   }
 }
 
