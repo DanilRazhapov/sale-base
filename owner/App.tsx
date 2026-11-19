@@ -6,6 +6,7 @@ import { OwnerLayout } from "./layouts/OwnerLayout";
 import { StoreLayout } from "./layouts/StoreLayout";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
 import RegistrationPage from "./pages/RegistrationPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import HomePage from "./pages/HomePage";
 import { CreateCashierPage } from "./pages/CreateCashierPage";
 import CreateStorePage from "./pages/CreateStorePage";
@@ -28,6 +29,7 @@ function OwnerRoutes() {
                 element={owner ? <Navigate to={state?.from ?? "/"} replace /> : <OwnerLoginPage />}
             />
             <Route path="/register" element={owner ? <Navigate to="/" replace /> : <RegistrationPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route element={<OwnerRoute><OwnerLayout /></OwnerRoute>}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/owner" element={<Navigate to="/" replace />} />

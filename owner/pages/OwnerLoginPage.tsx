@@ -42,6 +42,9 @@ const OwnerLoginPage = () => {
                 </>
             }
         >
+            {location.state?.passwordReset && (
+                <p className="alert-success" role="status">Пароль изменён. Войдите с новым паролем.</p>
+            )}
             {location.state?.registered && (
                 <p className="alert-success" role="status">
                     Аккаунт создан. Проверьте почту, если требуется подтверждение регистрации.
@@ -77,6 +80,7 @@ const OwnerLoginPage = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </label>
+                    <p style={{ textAlign: "right", margin: 0 }}><Link to="/forgot-password">Забыли пароль?</Link></p>
                     {errorMessage && (
                         <p className="alert-error" role="alert">
                             {errorMessage}
