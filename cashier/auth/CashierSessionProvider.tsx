@@ -33,7 +33,8 @@ export function CashierSessionProvider({ children }: { children: ReactNode }) {
                 );
                 if (!controller.signal.aborted) setCashierSession((previous) => previous ?? true);
             } catch (error) {
-                if (!controller.signal.aborted && cachedSessionId && error instanceof TerminalError && error.status === 401) {
+                if (!controller.signal.aborted && cachedSessionId && error instanceof TerminalError &&
+                    error.status === 401 && error.code !== "CASHIER_SESSION_MISSING") {
                     await rejectSession(cachedSessionId);
                 }
             } finally {

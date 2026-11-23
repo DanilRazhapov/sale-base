@@ -5,10 +5,12 @@ const legacyStorageKey = "salebase.cashier-session";
 export type TerminalResponse = { data: TerminalSnapshot; sessionId: string; priceChannel?: string };
 
 export class TerminalError extends Error {
-    status: number;
-    constructor(message: string, status: number) {
+    readonly status: number;
+    readonly code?: string;
+    constructor(message: string, status: number, code?: string) {
         super(message);
         this.status = status;
+        this.code = code;
     }
 }
 
@@ -53,6 +55,7 @@ export async function terminalRequest<T>(body: Record<string, unknown>, signal?:
         throw new TerminalError(
             typeof data?.error === "string" ? data.error : "Ошибка рабочего места кассира.",
             response.status,
+            typeof data?.code === "string" ? data.code : undefined,
         );
     }
     if (!data) throw new TerminalError("Сервис вернул пустой ответ.", 0);

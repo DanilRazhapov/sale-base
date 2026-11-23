@@ -3,10 +3,13 @@ import { RealtimeClient } from "@supabase/supabase-js";
 import { readLastCatalog, saveCatalog } from "../lib/indexedDb/localCategories";
 import { enqueueOperation, listPendingOperations } from "../lib/indexedDb/localOperations";
 import type { LocalOperation } from "../lib/indexedDb/localTypes";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { TerminalError, terminalRequest, terminalUnavailable, type TerminalResponse } from "../lib/cashierTerminal";
-import { isOfflineSessionCurrent, rejectSession, rememberSnapshot, type OfflineSession } from "../auth/offlineCashier";
+import {
+    isOfflineSessionCurrent, rejectSession, rememberSnapshot, sessionForOnlineSignIn, signInForSync, type OfflineSession,
+} from "../auth/offlineCashier";
 import { CashierPOS } from "./CashierPOS";
+import { TerminalDialog } from "./TerminalDialog";
 import Throbber from "../../shared/components/Throbber";
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Не удалось выполнить операцию.");
 export function CashierWorkspace({ onLogout, offlineSession }: {
@@ -17,6 +20,10 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [busy, setBusy] = useState(false);
+    const [localSession, setLocalSession] = useState(offlineSession);
+    const [requiresSignIn, setRequiresSignIn] = useState(false);
+    const [showSignIn, setShowSignIn] = useState(false);
+    const [signInError, setSignInError] = useState("");
     const working = useRef(false);
     const loadingSnapshot = useRef(false);
     const syncing = useRef(false);
@@ -102,6 +109,7 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                     storeIdRef.current = store.id;
                     sessionIdRef.current = response.sessionId;
                     setTerminal(response);
+                    setRequiresSignIn(false);
                     setError(syncError);
                 } finally {
                     syncing.current = false;
@@ -113,17 +121,26 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
             else await refreshCatalog();
         } catch (error) {
             if (current !== version.current) return;
+            let reconnectSession: OfflineSession | null = null;
             if (error instanceof TerminalError && error.status === 401) {
-                if (sessionIdRef.current) void rejectSession(sessionIdRef.current);
-                onLogout();
-                return;
+                const sessionId = sessionIdRef.current;
+                if (sessionId) reconnectSession = await sessionForOnlineSignIn(sessionId, error, AbortSignal.timeout(8000));
+                if (current !== version.current) return;
+                if (!reconnectSession) {
+                    if (sessionId) void rejectSession(sessionId);
+                    onLogout();
+                    return;
+                }
+                setLocalSession(localSession ?? reconnectSession);
+                setRequiresSignIn(true);
             }
 
             const storeId = storeIdRef.current;
+            const cachedSession = localSession ?? reconnectSession;
 
-            if (terminalUnavailable(error) && storeId) {
+            if ((reconnectSession || terminalUnavailable(error)) && storeId) {
                 try {
-                    if (offlineSession && !await isOfflineSessionCurrent(offlineSession)) {
+                    if (cachedSession && !await isOfflineSessionCurrent(cachedSession)) {
                         if (current === version.current) onLogout();
                         return;
                     }
@@ -133,13 +150,13 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                         const { products, categories } = catalog;
                         setTerminal((previous) => {
                             if (previous) return { ...previous, data: { ...previous.data, products, categories } };
-                            if (!offlineSession || offlineSession.expiresAt <= Date.now()) return null;
+                            if (!cachedSession || cachedSession.expiresAt <= Date.now()) return null;
                             return {
-                                sessionId: offlineSession.sessionId,
-                                data: { ...offlineSession.snapshot, products, categories },
+                                sessionId: cachedSession.sessionId,
+                                data: { ...cachedSession.snapshot, products, categories },
                             };
                         });
-                        setError("Нет связи с сервером. Операции сохраняются на устройстве.");
+                        setError(reconnectSession ? "" : "Нет связи с сервером. Операции сохраняются на устройстве.");
                         return;
                     }
                 } catch (cacheError) {
@@ -152,11 +169,12 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
         } finally {
             if (current === version.current) loadingSnapshot.current = false;
         }
-    }, [offlineSession, onLogout]);
+    }, [localSession, onLogout]);
 
     async function queueOperation(operation: LocalOperation) {
-        if (offlineSession && !await isOfflineSessionCurrent(offlineSession)) {
-            throw new TerminalError("Локальная сессия кассира завершена. Войдите заново.", 401);
+        if (localSession && !await isOfflineSessionCurrent(localSession)) {
+            onLogout();
+            throw new Error("Локальная сессия кассира завершена. Войдите заново.");
         }
         const products = await enqueueOperation(operation);
         setTerminal((previous) => previous?.data.store.id === operation.store_id
@@ -185,7 +203,7 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
 
     const priceChannel = terminal?.priceChannel;
     const expiresAt = terminal?.data.expires_at;
-    const expiry = expiresAt ? Date.parse(expiresAt) : offlineSession?.expiresAt;
+    const expiry = expiresAt ? Date.parse(expiresAt) : localSession?.expiresAt;
 
     useEffect(() => {
         if (expiry === undefined || !Number.isFinite(expiry)) return;
@@ -261,6 +279,37 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
         };
     }, [load, priceChannel]);
 
+    async function reconnect(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (working.current || !localSession) return;
+        const form = event.currentTarget;
+        const pin = new FormData(form).get("pin");
+        if (typeof pin !== "string" || !/^\d{4,12}$/.test(pin)) return;
+
+        working.current = true;
+        ++version.current;
+        loadingSnapshot.current = false;
+        setBusy(true);
+        setSignInError("");
+        form.reset();
+        try {
+            const result = await signInForSync(localSession, pin);
+            sessionIdRef.current = result.sessionId;
+            setTerminal((previous) => previous && {
+                sessionId: result.sessionId,
+                data: { ...previous.data, expires_at: result.expires_at },
+            });
+            setLocalSession(null);
+            setRequiresSignIn(false);
+            setShowSignIn(false);
+        } catch (failure) {
+            setSignInError(errorText(failure));
+        } finally {
+            working.current = false;
+            setBusy(false);
+        }
+    }
+
     async function run(action: () => Promise<void>, success: string, refreshInBackground = false) {
         if (working.current) return;
         if (expiry !== undefined && Date.now() >= expiry) {
@@ -283,7 +332,17 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
             if (!refreshInBackground) await load();
         } catch (error) {
             if (error instanceof TerminalError && error.status === 401) {
-                if (sessionIdRef.current) void rejectSession(sessionIdRef.current);
+                const sessionId = sessionIdRef.current;
+                const reconnectSession = sessionId
+                    ? await sessionForOnlineSignIn(sessionId, error, AbortSignal.timeout(8000))
+                    : null;
+                if (reconnectSession) {
+                    setLocalSession(localSession ?? reconnectSession);
+                    setRequiresSignIn(true);
+                    setError("Для этого действия войдите онлайн.");
+                    return;
+                }
+                if (sessionId) void rejectSession(sessionId);
                 onLogout();
                 return;
             }
@@ -297,9 +356,37 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
 
     return (
         <main className="pos-page">
+            {requiresSignIn && (
+                <div className="pos-shift-warning">
+                    <span role="status">Для синхронизации войдите онлайн. Продажи пока сохраняются на устройстве.</span>
+                    <button type="button" className={ui.button} disabled={busy} onClick={() => {
+                        setSignInError("");
+                        setShowSignIn(true);
+                    }}>
+                        Войти онлайн
+                    </button>
+                </div>
+            )}
+            {showSignIn && (
+                <TerminalDialog title="Войти онлайн" onClose={() => {
+                    if (!working.current) setShowSignIn(false);
+                }}>
+                    <form onSubmit={reconnect} aria-busy={busy}>
+                        <fieldset className={ui.fieldset} disabled={busy}>
+                            <label className={ui.label}>
+                                PIN кассира {localSession?.snapshot.cashier.name}
+                                <input className={ui.input} type="password" name="pin" autoComplete="current-password"
+                                    inputMode="numeric" pattern="[0-9]{4,12}" maxLength={12} required autoFocus />
+                            </label>
+                            {signInError && <p className={ui.error} role="alert">{signInError}</p>}
+                            <button className={ui.buttonBase + " button-primary"} type="submit">Войти</button>
+                        </fieldset>
+                    </form>
+                </TerminalDialog>
+            )}
             {terminal ? (
                 <CashierPOS
-                    key={terminal.sessionId}
+                    key={terminal.data.cashier.id}
                     sessionId={terminal.sessionId}
                     snapshot={terminal.data}
                     busy={busy}

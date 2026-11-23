@@ -82,13 +82,18 @@ async function rememberLogin(result: LoginReply, name: string, pin: string) {
     const verifier = await pinVerifier(pin, salt);
     await localAuth((saved) => {
         const store = saved.binding?.store;
+        const previous = saved.grant;
+        const snapshot = previous?.cashierId === result.cashierId && previous.expiresAt > Date.now() &&
+            saved.binding?.device.id === result.device.id && previous.snapshot?.store.id === result.device.store_id
+            ? { ...previous.snapshot, expires_at: result.expires_at }
+            : undefined;
         saved.binding = {
             device: result.device,
             store: store?.id === result.device.store_id ? store : undefined,
         };
         saved.grant = {
             cashierId: result.cashierId, sessionId: result.sessionId, name: name.toLowerCase(),
-            expiresAt, salt, verifier, failedAttempts: 0, blockedUntil: 0,
+            expiresAt, salt, verifier, failedAttempts: 0, blockedUntil: 0, snapshot,
         };
         delete saved.pendingLogout;
     });
@@ -170,6 +175,42 @@ export async function readCachedSessionId() {
 
 export async function isOfflineSessionCurrent(session: OfflineSession) {
     return session.expiresAt > Date.now() && await readCachedSessionId() === session.sessionId;
+}
+
+export async function sessionForOnlineSignIn(sessionId: string, error: TerminalError, signal: AbortSignal) {
+    const saved = await localAuth().catch(() => undefined);
+    const { grant, binding } = saved ?? {};
+    if (grant?.sessionId !== sessionId || !grant.snapshot || !binding || grant.expiresAt <= Date.now() ||
+        (!grant.signedOut && error.code !== "CASHIER_SESSION_MISSING")) return null;
+
+    const session: OfflineSession = { sessionId, expiresAt: grant.expiresAt, snapshot: grant.snapshot };
+    try {
+        const current = await terminalRequest<Binding>({ action: "device" }, signal);
+        if (signal.aborted) return null;
+        if (current.device?.id === binding.device.id) return session;
+        if (current.device?.id) await saveBinding(current);
+        return null;
+    } catch (failure) {
+        if (terminalUnavailable(failure)) return session;
+        if (!signal.aborted && failure instanceof TerminalError && failure.status === 401) await saveBinding(null);
+        return null;
+    }
+}
+
+export async function signInForSync(session: OfflineSession, pin: string) {
+    const { grant, binding } = await localAuth();
+    if (grant?.sessionId !== session.sessionId || !binding || grant.expiresAt <= Date.now()) {
+        throw new Error("Локальная сессия завершилась. Войдите в кассу заново.");
+    }
+    const result = await terminalRequest<LoginReply>({
+        action: "login", name: grant.name, pin,
+        expectedCashierId: grant.cashierId, expectedDeviceId: binding.device.id,
+    }, AbortSignal.timeout(20_000));
+    if (!result.sessionId || result.cashierId !== grant.cashierId || result.device?.id !== binding.device.id) {
+        throw new Error("Сервер не подтвердил вход текущего кассира.");
+    }
+    await quietStorage(rememberLogin(result, grant.name, pin));
+    return result;
 }
 
 async function finishLogout(sessionId: string) {

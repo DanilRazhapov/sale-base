@@ -58,15 +58,20 @@ export default {
           return json({ device: { id: device.id, name: device.name, store_id: device.store_id }, store });
         }
         if (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 120 ||
-          typeof body.pin !== "string" || !/^\d{4,12}$/.test(body.pin)) {
+          typeof body.pin !== "string" || !/^\d{4,12}$/.test(body.pin) ||
+          (body.expectedCashierId !== undefined && !uuid(body.expectedCashierId)) ||
+          (body.expectedDeviceId !== undefined && !uuid(body.expectedDeviceId))) {
           return json({ error: "Введите имя кассира и PIN (4–12 цифр)." }, 400);
+        }
+        if (body.expectedDeviceId !== undefined && body.expectedDeviceId !== device.id) {
+          return json({ error: "Привязка кассы изменилась." }, 409);
         }
         const { data: candidates, error } = await ctx.supabaseAdmin.rpc("cashier_login_attempt", {
           p_name: body.name.trim(), p_store_id: device.store_id,
         });
         if (error) throw error;
         const cashier = await findCashierByPin<{ id: string; pin_hash: string }>(body.pin, candidates ?? []);
-        if (!cashier) {
+        if (!cashier || (body.expectedCashierId !== undefined && body.expectedCashierId !== cashier.id)) {
           return json({ error: "Не удалось войти. Проверьте имя и PIN. После пяти попыток подождите 15 минут." }, 401);
         }
         const token = createToken();

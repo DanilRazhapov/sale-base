@@ -135,7 +135,9 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
 
     let currentSession: string | undefined;
     if (action !== "login" && action !== "pairing" && action !== "device") {
-        if (!tokenPattern.test(cashierToken)) return reply({ error: "Войдите как кассир." }, 401);
+        if (!tokenPattern.test(cashierToken)) {
+            return reply({ error: "Войдите как кассир.", code: "CASHIER_SESSION_MISSING" }, 401);
+        }
         currentSession = await sha256(`cashier-tab:${cashierToken}`);
         if (
             action !== "snapshot" &&
