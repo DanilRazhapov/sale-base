@@ -1,9 +1,12 @@
 import { createContext, useContext } from "react";
+import type { OfflineSession } from "./offlineCashier";
 
 export const CashierSessionContext = createContext<{
     cashierSession: boolean | null;
     loading: boolean;
-    setCashierSession: (active: boolean) => void;
+    offlineSession: OfflineSession | null;
+    startSession: (offlineSession: OfflineSession | null) => void;
+    endSession: () => void;
 } | null>(null);
 
 export function useCashierSession() {

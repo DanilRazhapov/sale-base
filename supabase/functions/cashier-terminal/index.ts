@@ -74,7 +74,10 @@ export default {
           p_cashier_id: cashier.id, p_token_hash: await hashToken(token), p_device_id: device.id,
         });
         if (sessionError) throw sessionError;
-        return json({ token, expires_at: expiresAt });
+        return json({
+          token, expires_at: expiresAt, cashierId: cashier.id,
+          device: { id: device.id, name: device.name, store_id: device.store_id },
+        });
       }
 
       if (typeof body.token !== "string" || !/^[0-9a-f]{64}$/.test(body.token)) {

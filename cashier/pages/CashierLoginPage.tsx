@@ -1,11 +1,11 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useCashierSession } from "../auth/session";
-import { terminalRequest } from "../lib/cashierTerminal";
+import { loginCashier } from "../auth/offlineCashier";
 import { ui } from "../../shared/lib/ui";
 import { TerminalPairing } from "../components/TerminalPairing";
 
 export default function CashierLoginPage({ ownerAppUrl }: { ownerAppUrl?: string }) {
-    const { setCashierSession } = useCashierSession();
+    const { startSession } = useCashierSession();
     const [name, setName] = useState("");
     const [pin, setPin] = useState("");
     const [busy, setBusy] = useState(false);
@@ -21,14 +21,9 @@ export default function CashierLoginPage({ ownerAppUrl }: { ownerAppUrl?: string
         setError("");
 
         try {
-            await terminalRequest({
-                action: "login",
-                name: name.trim(),
-                pin,
-            });
-
+            const offline = await loginCashier(name.trim(), pin);
             setPin("");
-            setCashierSession(true);
+            startSession(offline);
         } catch (error) {
             setError(error instanceof Error ? error.message : "Не удалось войти.");
         } finally {
@@ -39,7 +34,7 @@ export default function CashierLoginPage({ ownerAppUrl }: { ownerAppUrl?: string
     return (
         <main className="login-page">
             <section className="login-card">
-                <TerminalPairing />
+                <TerminalPairing loginBusy={busy} />
                 <span className={ui.eyebrow}>РАБОЧЕЕ МЕСТО КАССИРА</span>
                 <h1 className={ui.title}>Вход кассира</h1>
                 <p>Введите имя и PIN, выданные владельцем магазина.</p>

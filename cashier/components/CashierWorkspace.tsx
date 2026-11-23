@@ -1,20 +1,19 @@
 import { ui } from "../../shared/lib/ui";
 import { RealtimeClient } from "@supabase/supabase-js";
-import { readLastCatalog, saveCatalog, type CachedCatalog } from "../lib/indexedDb/localCategories";
+import { readLastCatalog, saveCatalog } from "../lib/indexedDb/localCategories";
 import { enqueueOperation, listPendingOperations } from "../lib/indexedDb/localOperations";
 import type { LocalOperation } from "../lib/indexedDb/localTypes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TerminalError, terminalRequest } from "../lib/cashierTerminal";
-import type { TerminalSnapshot } from "../lib/cashierCart";
+import { TerminalError, terminalRequest, terminalUnavailable, type TerminalResponse } from "../lib/cashierTerminal";
+import { isOfflineSessionCurrent, rejectSession, rememberSnapshot, type OfflineSession } from "../auth/offlineCashier";
 import { CashierPOS } from "./CashierPOS";
 import Throbber from "../../shared/components/Throbber";
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Не удалось выполнить операцию.");
-const unavailableStatuses = new Set([0, 502, 503, 504]);
-type TerminalResponse = { data: TerminalSnapshot; sessionId: string; priceChannel?: string };
-
-export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void; onRestore: () => void }) {
+export function CashierWorkspace({ onLogout, offlineSession }: {
+    onLogout: () => void;
+    offlineSession: OfflineSession | null;
+}) {
     const [terminal, setTerminal] = useState<TerminalResponse | null>(null);
-    const [cachedCatalog, setCachedCatalog] = useState<CachedCatalog | null>(null);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
     const [busy, setBusy] = useState(false);
@@ -22,7 +21,8 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
     const loadingSnapshot = useRef(false);
     const syncing = useRef(false);
     const version = useRef(0);
-    const storeIdRef = useRef<string | null>(null);
+    const storeIdRef = useRef(offlineSession?.snapshot.store.id);
+    const sessionIdRef = useRef(offlineSession?.sessionId);
 
     const load = useCallback(async () => {
         if (syncing.current) return;
@@ -36,10 +36,16 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
                 if (current !== version.current) return;
                 syncing.current = true;
                 try {
-                    const getSnapshot = () => terminalRequest<TerminalResponse>(
-                        { action: "snapshot" },
-                        AbortSignal.timeout(20000),
-                    );
+                    const getSnapshot = async () => {
+                        const response = await terminalRequest<TerminalResponse>(
+                            { action: "snapshot" },
+                            AbortSignal.timeout(20000),
+                        );
+                        if (sessionIdRef.current && sessionIdRef.current !== response.sessionId) {
+                            throw new TerminalError("Сессия кассира изменилась. Войдите заново.", 401);
+                        }
+                        return response;
+                    };
                     let response = await getSnapshot();
                     if (current !== version.current) return;
                     const { store, cashier } = response.data;
@@ -91,10 +97,11 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
                     }
 
                     if (current !== version.current) return;
+                    await rememberSnapshot(response);
+                    if (current !== version.current) return;
                     storeIdRef.current = store.id;
+                    sessionIdRef.current = response.sessionId;
                     setTerminal(response);
-                    setCachedCatalog(null);
-                    onRestore();
                     setError(syncError);
                 } finally {
                     syncing.current = false;
@@ -107,27 +114,32 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
         } catch (error) {
             if (current !== version.current) return;
             if (error instanceof TerminalError && error.status === 401) {
+                if (sessionIdRef.current) void rejectSession(sessionIdRef.current);
                 onLogout();
                 return;
             }
 
             const storeId = storeIdRef.current;
-            const serverUnavailable = error instanceof TerminalError && unavailableStatuses.has(error.status);
 
-            if (serverUnavailable) {
+            if (terminalUnavailable(error) && storeId) {
                 try {
-                    const catalog = await readLastCatalog(storeId ?? undefined);
+                    if (offlineSession && !await isOfflineSessionCurrent(offlineSession)) {
+                        if (current === version.current) onLogout();
+                        return;
+                    }
+                    const catalog = await readLastCatalog(storeId);
                     if (current !== version.current) return;
                     if (catalog) {
-                        if (!storeId) {
-                            setCachedCatalog(catalog);
-                        } else {
-                            const { products, categories } = catalog;
-                            setTerminal((previous) => previous?.data.store.id === storeId
-                                ? { ...previous, data: { ...previous.data, products, categories } }
-                                : previous);
-                            setError("Сервер недоступен. Показан сохранённый каталог.");
-                        }
+                        const { products, categories } = catalog;
+                        setTerminal((previous) => {
+                            if (previous) return { ...previous, data: { ...previous.data, products, categories } };
+                            if (!offlineSession || offlineSession.expiresAt <= Date.now()) return null;
+                            return {
+                                sessionId: offlineSession.sessionId,
+                                data: { ...offlineSession.snapshot, products, categories },
+                            };
+                        });
+                        setError("Нет связи с сервером. Операции сохраняются на устройстве.");
                         return;
                     }
                 } catch (cacheError) {
@@ -140,9 +152,12 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
         } finally {
             if (current === version.current) loadingSnapshot.current = false;
         }
-    }, [onLogout, onRestore]);
+    }, [offlineSession, onLogout]);
 
     async function queueOperation(operation: LocalOperation) {
+        if (offlineSession && !await isOfflineSessionCurrent(offlineSession)) {
+            throw new TerminalError("Локальная сессия кассира завершена. Войдите заново.", 401);
+        }
         const products = await enqueueOperation(operation);
         setTerminal((previous) => previous?.data.store.id === operation.store_id
             ? { ...previous, data: { ...previous.data, products } }
@@ -170,6 +185,21 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
 
     const priceChannel = terminal?.priceChannel;
     const expiresAt = terminal?.data.expires_at;
+    const expiry = expiresAt ? Date.parse(expiresAt) : offlineSession?.expiresAt;
+
+    useEffect(() => {
+        if (expiry === undefined || !Number.isFinite(expiry)) return;
+        const checkExpiry = () => {
+            if (Date.now() >= expiry) onLogout();
+        };
+        const timer = window.setTimeout(checkExpiry, Math.max(0, expiry - Date.now()));
+        window.addEventListener("focus", checkExpiry);
+        return () => {
+            window.clearTimeout(timer);
+            window.removeEventListener("focus", checkExpiry);
+        };
+    }, [expiry, onLogout]);
+
     useEffect(() => {
         let active = true;
         let timer: number | undefined;
@@ -223,22 +253,20 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
                 });
         }
 
-        const expiry = expiresAt ? Date.parse(expiresAt) : NaN;
-        const expiryTimer = Number.isFinite(expiry)
-            ? window.setTimeout(requestRefresh, Math.max(0, expiry - Date.now()))
-            : undefined;
-
         return () => {
             active = false;
             window.clearTimeout(timer);
-            window.clearTimeout(expiryTimer);
             window.clearInterval(poll);
             void realtime?.removeAllChannels();
         };
-    }, [load, priceChannel, expiresAt]);
+    }, [load, priceChannel]);
 
     async function run(action: () => Promise<void>, success: string, refreshInBackground = false) {
         if (working.current) return;
+        if (expiry !== undefined && Date.now() >= expiry) {
+            onLogout();
+            return;
+        }
 
         working.current = true;
         ++version.current;
@@ -255,6 +283,7 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
             if (!refreshInBackground) await load();
         } catch (error) {
             if (error instanceof TerminalError && error.status === 401) {
+                if (sessionIdRef.current) void rejectSession(sessionIdRef.current);
                 onLogout();
                 return;
             }
@@ -281,8 +310,6 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
                     error={error}
                     notice={notice}
                 />
-            ) : cachedCatalog ? (
-                <CashierPOS key="offline-catalog" catalog={cachedCatalog} onRetry={load} />
             ) : (
                 <div className="mx-auto mt-[15vh] max-w-lg text-center [&_h1]:mb-4 [&_button]:m-2">
                     <h1 className={ui.title}>Рабочее место кассира</h1>

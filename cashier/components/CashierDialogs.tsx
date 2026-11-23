@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logoutCashier } from "../auth/offlineCashier";
 import { ui } from "../../shared/lib/ui";
 import { money, kindName } from "../lib/cashierFormat";
 import { previousPriceLabel } from "../../shared/lib/formatters";
@@ -109,10 +110,7 @@ export function CashierDialogs({
                             disabled={busy}
                             onClick={() =>
                                 void run(async () => {
-                                    await terminalRequest({
-                                        action: "logout",
-                                        sessionId,
-                                    });
+                                    await logoutCashier(sessionId);
                                     logout();
                                 }, "")
                             }

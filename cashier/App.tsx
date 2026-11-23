@@ -42,7 +42,7 @@ function CashierRoutes() {
             />
             <Route
                 path="/cashier"
-                element={cashierSession === false ? <Navigate to="/login/cashier" replace /> : <CashierPage />}
+                element={cashierSession ? <CashierPage /> : <Navigate to="/login/cashier" replace />}
             />
             <Route path="*" element={<Navigate to="/login/cashier" replace />} />
         </Routes>

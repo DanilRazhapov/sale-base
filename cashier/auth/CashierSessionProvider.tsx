@@ -1,53 +1,67 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { TerminalError, terminalRequest } from "../lib/cashierTerminal";
 import { CashierSessionContext } from "./session";
+import { flushPendingLogout, readCachedSessionId, rejectSession, type OfflineSession } from "./offlineCashier";
 
 export function CashierSessionProvider({ children }: { children: ReactNode }) {
     const [cashierSession, setCashierSession] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(navigator.onLine);
+    const [offlineSession, setOfflineSession] = useState<OfflineSession | null>(null);
+
+    const startSession = useCallback((offline: OfflineSession | null) => {
+        setOfflineSession(offline);
+        setCashierSession(true);
+    }, []);
+    const endSession = useCallback(() => {
+        setOfflineSession(null);
+        setCashierSession(false);
+    }, []);
 
     useEffect(() => {
+        if (cashierSession !== null) return;
         const controller = new AbortController();
-        let checking = false;
 
         async function restoreCashier() {
-            if (checking) return;
-            checking = true;
+            let cachedSessionId: string | undefined;
             try {
+                if (!navigator.onLine || await flushPendingLogout()) return;
+                cachedSessionId = await readCachedSessionId();
+                if (controller.signal.aborted) return;
                 await terminalRequest(
                     { action: "snapshot" },
                     AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
                 );
-                finish(true);
+                if (!controller.signal.aborted) setCashierSession((previous) => previous ?? true);
             } catch (error) {
-                if (error instanceof TerminalError && error.status === 401) finish(false);
+                if (!controller.signal.aborted && cachedSessionId && error instanceof TerminalError && error.status === 401) {
+                    await rejectSession(cachedSessionId);
+                }
             } finally {
-                checking = false;
-                if (!controller.signal.aborted) setLoading(false);
-            }
-
-            function finish(active: boolean) {
-                if (controller.signal.aborted) return;
-                setCashierSession((previous) => previous ?? active);
+                if (!controller.signal.aborted) {
+                    setCashierSession((previous) => previous ?? false);
+                    setLoading(false);
+                }
             }
         }
 
-        const offline = () => setLoading(false);
+        void restoreCashier();
+        return () => controller.abort();
+    }, [cashierSession]);
 
-        if (cashierSession === null) {
-            if (navigator.onLine) void restoreCashier();
-            window.addEventListener("online", restoreCashier);
-            window.addEventListener("offline", offline);
-        }
-        return () => {
-            controller.abort();
-            window.removeEventListener("online", restoreCashier);
-            window.removeEventListener("offline", offline);
+    useEffect(() => {
+        if (cashierSession !== false) return;
+        const finishLogout = () => {
+            if (navigator.onLine) void flushPendingLogout().catch(() => {
+                // Keep the pending logout for the next connection or sign-in.
+            });
         };
+        finishLogout();
+        window.addEventListener("online", finishLogout);
+        return () => window.removeEventListener("online", finishLogout);
     }, [cashierSession]);
 
     return (
-        <CashierSessionContext.Provider value={{ cashierSession, loading, setCashierSession }}>
+        <CashierSessionContext.Provider value={{ cashierSession, loading, offlineSession, startSession, endSession }}>
             {children}
         </CashierSessionContext.Provider>
     );

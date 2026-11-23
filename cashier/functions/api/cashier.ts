@@ -7,6 +7,8 @@ type TerminalReply = {
     error?: string;
     token?: string;
     expires_at?: string;
+    cashierId?: string;
+    device?: { id: string; name: string; store_id: string };
 };
 
 
@@ -232,10 +234,22 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
         if (!result) return reply({ error: "Сервис вернул пустой ответ." }, 502);
         if (action === "login") {
             const loginToken = result?.token;
-            const cookie = typeof loginToken === "string" && tokenPattern.test(loginToken)
-                ? sessionCookie(loginToken, result.expires_at) : undefined;
+            if (typeof loginToken !== "string" || !tokenPattern.test(loginToken)) {
+                return reply({ error: "Некорректный ответ авторизации." }, 502);
+            }
+            const cookie = sessionCookie(loginToken, result.expires_at);
             if (!cookie) return reply({ error: "Некорректный ответ авторизации." }, 502);
-            return reply({ expires_at: result.expires_at }, 200, cookie);
+            const { device, cashierId } = result;
+            return reply({
+                expires_at: result.expires_at,
+                ...(device && uuidPattern.test(device.id) && uuidPattern.test(device.store_id) &&
+                    typeof device.name === "string" && typeof cashierId === "string" && uuidPattern.test(cashierId)
+                    ? {
+                        cashierId,
+                        device: { id: device.id, store_id: device.store_id, name: device.name },
+                        sessionId: await sha256(`cashier-tab:${loginToken}`),
+                    } : {}),
+            }, 200, cookie);
         }
         if (action === "logout") {
             return reply(result, 200, `${cookieName}=; ${cookieOptions}; Max-Age=0`);

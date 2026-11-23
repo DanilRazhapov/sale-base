@@ -1,4 +1,8 @@
+import type { TerminalSnapshot } from "./cashierCart";
+
 const legacyStorageKey = "salebase.cashier-session";
+
+export type TerminalResponse = { data: TerminalSnapshot; sessionId: string; priceChannel?: string };
 
 export class TerminalError extends Error {
     status: number;
@@ -6,6 +10,10 @@ export class TerminalError extends Error {
         super(message);
         this.status = status;
     }
+}
+
+export function terminalUnavailable(error: unknown) {
+    return error instanceof TerminalError && [0, 502, 503, 504].includes(error.status);
 }
 
 export async function terminalRequest<T>(body: Record<string, unknown>, signal?: AbortSignal): Promise<T> {

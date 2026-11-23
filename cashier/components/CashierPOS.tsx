@@ -6,7 +6,6 @@ import type { CashierPOSProps } from "./types";
 import { CashierCatalog } from "./CashierCatalog";
 import { CashierCart } from "./CashierCart";
 import { CashierDialogs } from "./CashierDialogs";
-import type { CachedCatalog } from "../lib/indexedDb/localCategories";
 
 function CashierHeader({ storeName, children }: { storeName: string; children?: ReactNode }) {
     return (
@@ -23,33 +22,7 @@ function CashierHeader({ storeName, children }: { storeName: string; children?: 
     );
 }
 
-export function CashierPOS(props: CashierPOSProps | { catalog: CachedCatalog; onRetry: () => Promise<void> }) {
-    if ("catalog" in props) {
-        const { catalog, onRetry } = props;
-        const savedAt = new Date(catalog.savedAt);
-        return (
-            <div className="pos-screen" data-view="products">
-                <CashierHeader storeName={catalog.store.name} />
-                <div className="pos-shift-warning">
-                    <span role="status">
-                        Офлайн. Каталог сохранён <time dateTime={savedAt.toISOString()}>{savedAt.toLocaleString("ru-RU")}</time>.
-                    </span>
-                    <button type="button" className={ui.button} onClick={() => void onRetry()}>
-                        Проверить связь
-                    </button>
-                </div>
-                <div className="pos-layout pos-layout--catalog-only">
-                    <div className="pos-catalog-view">
-                        <CashierCatalog snapshot={catalog} />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-    return <ActiveCashierPOS {...props} />;
-}
-
-function ActiveCashierPOS(props: CashierPOSProps) {
+export function CashierPOS(props: CashierPOSProps) {
     const { snapshot, busy, error, notice } = props;
     const pos = useCashierPOS(props);
     const { lines, kind, ownShift, total, mobileView, setMobileView, setDialog, cartError } = pos;
