@@ -158,34 +158,32 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
             ++version.current;
             loadingSnapshot.current = false;
         };
-        const timer = window.setInterval(refresh, 15000);
         window.addEventListener("focus", refresh);
         window.addEventListener("online", refresh);
         return () => {
             invalidate();
             window.clearTimeout(initial);
-            window.clearInterval(timer);
             window.removeEventListener("focus", refresh);
             window.removeEventListener("online", refresh);
         };
     }, [load]);
 
     const priceChannel = terminal?.priceChannel;
+    const expiresAt = terminal?.data.expires_at;
     useEffect(() => {
-        const url = import.meta.env.VITE_SUPABASE_URL;
-        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        if (!priceChannel || !url || !key) return;
-
-        const endpoint = new URL("realtime/v1", url.replace(/\/?$/, "/"));
-        endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
-        const realtime = new RealtimeClient(endpoint.href, { params: { apikey: key } });
         let active = true;
         let timer: number | undefined;
+        let poll: number | undefined;
+        let realtime: RealtimeClient | undefined;
+
+        function canRefresh() {
+            return !working.current && !loadingSnapshot.current && !syncing.current;
+        }
 
         function refreshWhenIdle() {
             timer = undefined;
             if (!active || !navigator.onLine) return;
-            if (working.current || loadingSnapshot.current || syncing.current) {
+            if (!canRefresh()) {
                 timer = window.setTimeout(refreshWhenIdle, 250);
                 return;
             }
@@ -196,19 +194,48 @@ export function CashierWorkspace({ onLogout, onRestore }: { onLogout: () => void
             if (active && timer === undefined) timer = window.setTimeout(refreshWhenIdle, 100);
         }
 
-        realtime.channel(priceChannel, { config: { private: true } })
-            .on("broadcast", { event: "price_changed" }, requestRefresh)
-            .subscribe((status) => {
-                // Cover price changes between the snapshot and the channel joining or rejoining.
-                if (status === "SUBSCRIBED") requestRefresh();
-            });
+        function startPolling() {
+            if (poll !== undefined) return;
+            poll = window.setInterval(() => {
+                if (navigator.onLine && canRefresh()) void load();
+            }, 15000);
+        }
+
+        startPolling();
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        if (priceChannel && url && key) {
+            const endpoint = new URL("realtime/v1", url.replace(/\/?$/, "/"));
+            endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+            realtime = new RealtimeClient(endpoint.href, { params: { apikey: key } });
+            realtime.channel(priceChannel, { config: { private: true } })
+                .on("broadcast", { event: "price_changed" }, requestRefresh)
+                .on("broadcast", { event: "snapshot_changed" }, requestRefresh)
+                .subscribe((status) => {
+                    if (!active) return;
+                    if (status === "SUBSCRIBED") {
+                        window.clearInterval(poll);
+                        poll = undefined;
+                        requestRefresh();
+                    } else {
+                        startPolling();
+                    }
+                });
+        }
+
+        const expiry = expiresAt ? Date.parse(expiresAt) : NaN;
+        const expiryTimer = Number.isFinite(expiry)
+            ? window.setTimeout(requestRefresh, Math.max(0, expiry - Date.now()))
+            : undefined;
 
         return () => {
             active = false;
             window.clearTimeout(timer);
-            void realtime.removeAllChannels();
+            window.clearTimeout(expiryTimer);
+            window.clearInterval(poll);
+            void realtime?.removeAllChannels();
         };
-    }, [load, priceChannel]);
+    }, [load, priceChannel, expiresAt]);
 
     async function run(action: () => Promise<void>, success: string, refreshInBackground = false) {
         if (working.current) return;

@@ -11,6 +11,7 @@ export type TerminalProduct = {
 export type TerminalSnapshot = {
     store: { id: string; name: string };
     cashier: { id: string; name: string };
+    expires_at?: string;
     categories: { id: number; name: string }[];
     products: TerminalProduct[];
     shift: {

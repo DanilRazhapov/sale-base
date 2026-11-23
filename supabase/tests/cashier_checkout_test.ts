@@ -127,21 +127,24 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     const priceVersion = savedCatalog.products.find((product) => product.id === second)?.price_version_id;
     assert(priceVersion, "The catalog includes a server-issued price version");
     await db.exec("reset role;");
-    assert((await row("select count(*) as n from realtime.messages")).n === 0, "Stock changes do not broadcast price updates");
-    await db.query("update public.products set price = 11 where id=$1", [foreign]);
-    assert((await row("select count(*) as n from realtime.messages")).n === 0, "Other store changes do not notify these sessions");
-    await db.query("update public.products set price = 12 where id=$1", [second]);
     const topic = `cashier-prices:${await hashToken(`cashier-prices:${hash}`)}`;
-    const message = await row("select * from realtime.messages where topic=$1", [topic]);
+    const before = await row("select count(*) as n from realtime.messages");
+    assert(Number(before.n) > 0, "Stock and shift changes notify the cashier");
+    assert(!(await row("select 1 from realtime.messages where event='price_changed'")), "Stock changes do not broadcast price updates");
+    await db.query("update public.products set price = 11 where id=$1", [foreign]);
+    assert((await row("select count(*) as n from realtime.messages")).n === before.n, "Other store changes do not notify these sessions");
+    await db.query("update public.products set price = 12 where id=$1", [second]);
+    const message = await row("select * from realtime.messages where topic=$1 and event='price_changed'", [topic]);
     assert(message?.private === true && message.event === "price_changed" &&
       JSON.stringify(message.payload) === "{}", "Price changes send a private, empty notification");
-    assert((await row("select count(*) as n from realtime.messages")).n === 2, "Every active session in the store is notified");
+    assert((await row("select count(*) as n from realtime.messages where event='price_changed'")).n === 2,
+      "Every active session in the store is notified");
     await db.exec("set role anon;");
     await db.query("select set_config('realtime.topic',$1,false)", ["cashier-prices:unknown"]);
     assert((await row("select count(*) as n from realtime.messages")).n === 0, "Unknown topics cannot receive notifications");
     await db.query("select set_config('realtime.topic',$1,false)", [topic]);
     assert(await row("select 1 from realtime.messages where topic=$1", [topic]), "The terminal can receive on its topic");
-    assert((await row("select count(*) as n from realtime.messages")).n === 1, "The terminal cannot receive another session's message");
+    assert(!(await row("select 1 from realtime.messages where topic<>$1", [topic])), "The terminal cannot receive another session's message");
     await fails("select realtime.send('{}','price_changed',$1,true)", [topic], "42501");
     await db.exec("reset role;");
     await db.exec("set role service_role;");
@@ -179,11 +182,15 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     assert(Number(ownerMovement.catalog_price_at_sync) === 12, "Owner history retains the price at checkout after another price change");
     const summary = (await row("select public.get_owner_dashboard($1, 7) as data", [store])).data as { revenue: number };
     assert(Number(summary.revenue) === 35.01, "Owner dashboard reports revenue at the prices paid");
-    await db.exec("reset role; set role service_role;");
+    await db.exec("reset role;");
+    const countTopic = "select count(*) as n from realtime.messages where topic=$1";
+    const beforeLogout = await row(countTopic, [topic]);
+    await db.exec("set role service_role;");
     await db.query("select public.cashier_logout($1)", [hash]);
     await db.exec("reset role;");
+    assert((await row(countTopic, [topic])).n === Number(beforeLogout.n) + 1, "Revocation notifies the connected terminal once");
     await db.query("update public.products set price = 14 where id=$1", [second]);
-    assert((await row("select count(*) as n from realtime.messages where topic=$1", [topic])).n === 2,
+    assert((await row(countTopic, [topic])).n === Number(beforeLogout.n) + 1,
       "A revoked session stops receiving new messages");
     await db.exec("set role anon;");
     assert(!(await row("select 1 from realtime.messages where topic=$1", [topic])), "A revoked session cannot rejoin");
