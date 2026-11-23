@@ -270,11 +270,11 @@
             box-shadow 140ms ease;
     }
 
-    .pos-product:not(:disabled):hover {
+    button.pos-product:not(:disabled):hover {
         box-shadow: inset 0 0 0 2px var(--pos-lime);
     }
 
-    .pos-product:not(:disabled):active {
+    button.pos-product:not(:disabled):active {
         transform: scale(0.97);
         background: var(--surface-muted);
     }
@@ -354,7 +354,7 @@
             transition: none;
         }
 
-        .pos-product:not(:disabled):active {
+        button.pos-product:not(:disabled):active {
             transform: none;
         }
 
@@ -628,6 +628,10 @@
         .pos-screen[data-view="cart"] :is(.pos-header, .pos-catalog-view) {
             display: none;
         }
+    }
+
+    .pos-layout--catalog-only {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     @media (width < 600px) {

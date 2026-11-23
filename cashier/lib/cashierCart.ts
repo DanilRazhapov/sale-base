@@ -6,6 +6,7 @@ export type TerminalProduct = {
     unit: string | null;
     category_id: number | null;
     image_key?: string | null;
+    price_version_id?: string | null;
 };
 export type TerminalSnapshot = {
     store: { id: string; name: string };
@@ -27,6 +28,9 @@ export type TerminalSnapshot = {
         direction: number;
         note: string;
         created_at: string;
+        price_at_time?: number | null;
+        sold_at_previous_price?: boolean;
+        catalog_price_at_sync?: number | null;
     }[];
 };
 export type CartLine = {
@@ -41,6 +45,7 @@ export type CheckoutItem = {
     product_id: string;
     quantity: number;
     expected_price: number | null;
+    price_version_id?: string;
 };
 export type PendingCheckout = {
     request_id: string;

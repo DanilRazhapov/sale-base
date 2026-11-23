@@ -1,11 +1,11 @@
 -- profiles has no role column; store roles belong to store_members.
 -- The existing on_auth_user_created trigger continues calling this function.
 create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = ''
+  as $$
 begin
   insert into public.profiles (id, full_name, is_active)
   values (

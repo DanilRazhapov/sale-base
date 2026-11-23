@@ -87,6 +87,7 @@ export default {
         case "snapshot": rpc = "cashier_tablet_snapshot"; break;
         case "logout": rpc = "cashier_logout"; break;
         case "checkout":
+        case "checkout_for_shift":
           if (!uuid(body.request_id) || !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 100 ||
             !["sale", "receipt", "writeoff"].includes(String(body.kind ?? "sale")) ||
             body.items.some((item) => !item || typeof item !== "object" || !uuid(item.product_id) ||
@@ -94,8 +95,12 @@ export default {
               ((body.kind ?? "sale") === "sale" && (!numeric(item.expected_price) || item.expected_price < 0)))) {
             return json({ error: "Проверьте товары, количество и цены в корзине." }, 400);
           }
-          rpc = "cashier_checkout";
+          if (action === "checkout_for_shift" && !uuid(body.shift_id)) {
+            return json({ error: "Проверьте смену операции." }, 400);
+          }
+          rpc = action === "checkout_for_shift" ? "cashier_checkout_for_shift" : "cashier_checkout";
           args = { ...args, p_request_id: body.request_id, p_items: body.items, p_kind: body.kind ?? "sale" };
+          if (action === "checkout_for_shift") args.p_shift_id = body.shift_id;
           break;
         case "open_shift":
           if (!numeric(body.opening_cash)) return json({ error: "Введите сумму наличных." }, 400);

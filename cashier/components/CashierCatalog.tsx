@@ -1,12 +1,13 @@
 import { ui } from "../../shared/lib/ui";
 import { kindName, money } from "../lib/cashierFormat";
-import type { CartKind } from "../lib/cashierCart";
-import type { CashierPOSProps } from "./types";
+import type { CartKind, TerminalSnapshot } from "../lib/cashierCart";
 import type { CashierPOSState } from "./useCashierPOS";
 import { useEffect, useRef, useState } from "react";
 
-type Props = Pick<CashierPOSState, "lines" | "kind" | "ownShift" | "locked" | "changeKind" | "add"> &
-    Pick<CashierPOSProps, "snapshot">;
+type Props = {
+    snapshot: Pick<TerminalSnapshot, "products" | "categories">;
+    actions?: Pick<CashierPOSState, "lines" | "kind" | "ownShift" | "locked" | "changeKind" | "add">;
+};
 
 const operationKinds: CartKind[] = ["sale", "receipt", "writeoff"];
 
@@ -46,7 +47,7 @@ function ProductImage({ imageKey }: { imageKey?: string | null }) {
     );
 }
 
-export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add, snapshot }: Props) {
+export function CashierCatalog({ actions, snapshot }: Props) {
     const [category, setCategory] = useState("all");
     const [search, setSearch] = useState("");
     const categoriesRef = useRef<HTMLDivElement>(null);
@@ -147,21 +148,24 @@ export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add,
                 (category === "none" ? product.category_id === null : String(product.category_id) === category)) &&
             product.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
     );
+    const ProductCard = actions ? "button" : "article";
     return (
         <section className="pos-catalog" aria-label="Каталог товаров">
-            <div className="pos-operation-tabs" role="group" aria-label="Тип операции">
-                {operationKinds.map((value) => (
-                    <button
-                        className={ui.button}
-                        key={value}
-                        disabled={locked}
-                        aria-pressed={kind === value}
-                        onClick={() => changeKind(value)}
-                    >
-                        {kindName[value]}
-                    </button>
-                ))}
-            </div>
+            {actions && (
+                <div className="pos-operation-tabs" role="group" aria-label="Тип операции">
+                    {operationKinds.map((value) => (
+                        <button
+                            className={ui.button}
+                            key={value}
+                            disabled={actions.locked}
+                            aria-pressed={actions.kind === value}
+                            onClick={() => actions.changeKind(value)}
+                        >
+                            {kindName[value]}
+                        </button>
+                    ))}
+                </div>
+            )}
             <label className="pos-search">
                 <span className="sr-only">Поиск товара по названию</span>
                 <input
@@ -201,30 +205,33 @@ export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add,
                 {filtered.length > 0 ? (
                     <div className="pos-product-grid">
                         {filtered.map((product) => {
-                            const selected = lines.find((line) => line.product_id === product.id);
-                            const unavailable = kind !== "receipt" && Number(product.stock ?? 0) <= 0;
+                            const selected = actions?.lines.find((line) => line.product_id === product.id);
+                            const unavailable = actions?.kind !== "receipt" && Number(product.stock ?? 0) <= 0;
                             return (
-                                <button
-                                    className={ui.buttonBase + " pos-product"}
+                                <ProductCard
+                                    className={actions ? ui.buttonBase + " pos-product" : "pos-product"}
                                     key={product.id}
-                                    disabled={
-                                        locked ||
-                                        !ownShift ||
-                                        unavailable ||
-                                        (kind === "sale" && product.price === null)
-                                    }
-                                    onClick={() => add(product)}
+                                    {...(actions && {
+                                        disabled:
+                                            actions.locked ||
+                                            !actions.ownShift ||
+                                            unavailable ||
+                                            (actions.kind === "sale" && product.price === null),
+                                        onClick: () => actions.add(product),
+                                    })}
                                 >
                                     <span className="pos-product-media">
                                         <ProductImage imageKey={product.image_key} />
-                                        <span
-                                            className="pos-product-quantity"
-                                            key={selected?.quantity || "+"}
-                                            data-selected={!!selected}
-                                            aria-hidden="true"
-                                        >
-                                            {selected?.quantity || "+"}
-                                        </span>
+                                        {actions && (
+                                            <span
+                                                className="pos-product-quantity"
+                                                key={selected?.quantity || "+"}
+                                                data-selected={!!selected}
+                                                aria-hidden="true"
+                                            >
+                                                {selected?.quantity || "+"}
+                                            </span>
+                                        )}
                                     </span>
                                     <strong title={product.name}>{product.name}</strong>
                                     <span className="pos-product-price">
@@ -238,7 +245,7 @@ export function CashierCatalog({ lines, kind, ownShift, locked, changeKind, add,
                                             : `Остаток: ${Number(product.stock ?? 0).toLocaleString("ru-RU")} ${product.unit ?? "шт"}`}
                                     </span>
                                     {selected && <span className="sr-only">В документе: {selected.quantity}</span>}
-                                </button>
+                                </ProductCard>
                             );
                         })}
                     </div>

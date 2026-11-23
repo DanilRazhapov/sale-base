@@ -5,3 +5,8 @@ export const money = (value: number) =>
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
+
+export function previousPriceLabel(salePrice: number, catalogPrice: number | null) {
+    const priceAtSync = catalogPrice === null ? "не задана" : `${money(catalogPrice)} сом`;
+    return `Продано по прежней цене — ${money(salePrice)} сом за ед. Цена при синхронизации — ${priceAtSync}.`;
+}

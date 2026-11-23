@@ -1,5 +1,5 @@
 import { ui } from "../../shared/lib/ui";
-import { money, date } from "../../shared/lib/formatters";
+import { money, date, previousPriceLabel } from "../../shared/lib/formatters";
 import { StoreHeader } from "../components/store/StoreHeader";
 import { TerminalDevices } from "../components/store/TerminalDevices";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +33,8 @@ type Movement = {
     note: string | null;
     created_at: string;
     price_at_time: number | null;
+    sold_at_previous_price: boolean;
+    catalog_price_at_sync: number | null;
     cashier_id: string | null;
     created_by: string | null;
 };
@@ -94,7 +96,7 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                     supabase
                         .from("stock_movements")
                         .select(
-                            "id, product_id, quantity, direction, movement_type, note, created_at, price_at_time, cashier_id, created_by",
+                            "id, product_id, quantity, direction, movement_type, note, created_at, price_at_time, cashier_id, created_by, sold_at_previous_price, catalog_price_at_sync",
                         )
                         .eq("store_id", storeId)
                         .order("created_at", { ascending: false })
@@ -333,6 +335,11 @@ function StoreWorkspace({ storeId }: { storeId: string }) {
                                                       100,
                                               )
                                             : "—"}
+                                        {item.sold_at_previous_price && item.price_at_time !== null && (
+                                            <small className="block">
+                                                {previousPriceLabel(item.price_at_time, item.catalog_price_at_sync)}
+                                            </small>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ui } from "../../shared/lib/ui";
 import { money, kindName } from "../lib/cashierFormat";
+import { previousPriceLabel } from "../../shared/lib/formatters";
 import type { CashierPOSProps } from "./types";
 import type { CashierPOSState } from "./useCashierPOS";
 import { TerminalDialog } from "./TerminalDialog";
 import { terminalRequest } from "../lib/cashierTerminal";
+import { listPendingOperations } from "../lib/indexedDb/localOperations";
 
 type Props = Pick<
     CashierPOSState,
@@ -18,7 +20,6 @@ type Props = Pick<
     | "setDialog"
     | "nextKind"
     | "setCartError"
-    | "setSavedTotal"
 > &
     Pick<CashierPOSProps, "sessionId" | "snapshot" | "busy" | "error" | "refresh" | "logout" | "run">;
 
@@ -33,7 +34,6 @@ export function CashierDialogs({
     setDialog,
     nextKind,
     setCartError,
-    setSavedTotal,
     sessionId,
     snapshot,
     busy,
@@ -82,7 +82,6 @@ export function CashierDialogs({
                                     pending: null,
                                 });
                                 setDialog(null);
-                                setSavedTotal(null);
                             }}
                         >
                             Очистить и переключить
@@ -183,10 +182,15 @@ export function CashierDialogs({
                                 onSubmit={(event) => {
                                     event.preventDefault();
                                     void run(async () => {
+                                        const shiftId = snapshot.shift!.id;
+                                        const operations = await listPendingOperations(snapshot.store.id, snapshot.cashier.id);
+                                        if (operations.some((operation) => operation.shift_id === shiftId)) {
+                                            throw new Error("Дождитесь отправки сохранённых операций перед закрытием смены.");
+                                        }
                                         await terminalRequest({
                                             action: "close_shift",
                                             sessionId,
-                                            shift_id: snapshot.shift!.id,
+                                            shift_id: shiftId,
                                             closing_cash: Number(closingCash),
                                         });
                                         setClosingCash("");
@@ -240,6 +244,9 @@ export function CashierDialogs({
                                     {item.note} · {item.direction > 0 ? "+" : "−"}
                                     {item.quantity}
                                 </p>
+                                {item.sold_at_previous_price && item.price_at_time != null && (
+                                    <p>{previousPriceLabel(item.price_at_time, item.catalog_price_at_sync ?? null)}</p>
+                                )}
                                 <small>{new Date(item.created_at).toLocaleString("ru-RU")}</small>
                             </article>
                         ))}

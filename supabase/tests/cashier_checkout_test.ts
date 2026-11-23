@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
-import { lineCents, quantityMilli } from "../../src/lib/cashierCart.ts";
+import { lineCents, quantityMilli } from "../../cashier/lib/cashierCart.ts";
+import { hashToken } from "../functions/_shared/tokens.ts";
 function assert(value: unknown, label: string): asserts value { if (!value) throw new Error(label); }
 
 Deno.test("weighted cart quantities and money rounding", () => {
@@ -17,6 +18,7 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
   const otherStore = "20000000-0000-4000-8000-000000000002";
   const cashier = "30000000-0000-4000-8000-000000000001";
   const secondCashier = "30000000-0000-4000-8000-000000000002";
+  const device = "31000000-0000-4000-8000-000000000001";
   const first = "40000000-0000-4000-8000-000000000001";
   const second = "40000000-0000-4000-8000-000000000002";
   const foreign = "40000000-0000-4000-8000-000000000003";
@@ -29,6 +31,7 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     throw new Error(`Expected rejection: ${sql}`);
   }
   const checkout = "select * from public.cashier_checkout($1,$2,$3::jsonb,$4)";
+  const checkoutForShift = "select * from public.cashier_checkout_for_shift($1,$2,$3::jsonb,$4,$5)";
   const items = [{ product_id: first, quantity: 0.125, expected_price: 0.04 }, { product_id: second, quantity: 2, expected_price: 10 }];
   try {
     await db.exec(`
@@ -39,12 +42,13 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
       grant execute on function auth.uid() to authenticated,anon,service_role;
       insert into auth.users(id) values('${owner}');
     `);
+    await db.exec(await Deno.readTextFile(new URL("./realtime_fixture.sql", import.meta.url)));
     const migrations: string[] = [];
     for await (const entry of Deno.readDir(new URL("../migrations/", import.meta.url))) if (entry.name.endsWith(".sql")) migrations.push(entry.name);
     for (const name of migrations.sort()) {
       // PGlite has no background workers/pg_cron; exercise the scheduled function
       // directly in cashier_terminal_test instead. Apply all business migrations.
-      if (name === "20261031010100_schedule_shift_expiry.sql") continue;
+      if (name.includes("schedule")) continue;
       await db.exec(await Deno.readTextFile(new URL(`../migrations/${name}`, import.meta.url)));
     }
     await db.exec(`
@@ -53,14 +57,16 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
       insert into public.store_members(store_id,user_id,role) values('${store}','${owner}','owner');
       insert into public.cashiers(id,store_id,name,pin_hash,created_by) values
         ('${cashier}','${store}','First','test','${owner}'),('${secondCashier}','${store}','Second','test','${owner}');
+      insert into public.terminal_devices(id,store_id,name,paired_by)
+        values ('${device}','${store}','Till','${owner}');
       insert into public.categories(id,store_id,name) values(1,'${store}','Food'),(2,'${otherStore}','Other');
       insert into public.products(id,store_id,category_id,name,price,stock,unit) values
         ('${first}','${store}',1,'Weighted',0.04,10,'кг'),('${second}','${store}',1,'Bread',10,5,'шт'),
         ('${foreign}','${otherStore}',2,'Foreign',10,5,'шт');
       set role service_role;
     `);
-    await db.query("select public.cashier_create_session($1,$2)", [cashier, hash]);
-    await db.query("select public.cashier_create_session($1,$2)", [secondCashier, otherHash]);
+    await db.query("select public.cashier_create_session($1,$2,$3)", [cashier, hash, device]);
+    await db.query("select public.cashier_create_session($1,$2,$3)", [secondCashier, otherHash, device]);
     const shift = await row("select * from public.cashier_open_shift($1,100)", [hash]);
     const snapshot = (await row("select public.cashier_tablet_snapshot($1) as data", [hash])).data as { categories: unknown[]; products: { category_id: number }[] };
     assert(snapshot.categories.length === 1 && snapshot.products.length === 2 && snapshot.products[0].category_id === 1, "Only own categories and categorized products");
@@ -110,5 +116,76 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     // A snapshot commits the cleanup even after a rejected checkout rolled back.
     await row("select public.cashier_tablet_snapshot($1)", [hash]);
     assert((await row("select automatically_closed from public.cashier_shifts where id=$1", [overdue.id])).automatically_closed, "Overdue checkout shift subsequently closes");
+
+    const offlineShift = await row("select * from public.cashier_open_shift($1,0)", [hash]);
+    type HistoricalSnapshot = {
+      products: { id: string; price_version_id: string }[];
+      movements: { receipt_id: string; sold_at_previous_price: boolean; catalog_price_at_sync: number }[];
+      shift: { revenue: number };
+    };
+    const savedCatalog = (await row("select public.cashier_tablet_snapshot($1) as data", [hash])).data as HistoricalSnapshot;
+    const priceVersion = savedCatalog.products.find((product) => product.id === second)?.price_version_id;
+    assert(priceVersion, "The catalog includes a server-issued price version");
+    await db.exec("reset role;");
+    assert((await row("select count(*) as n from realtime.messages")).n === 0, "Stock changes do not broadcast price updates");
+    await db.query("update public.products set price = 11 where id=$1", [foreign]);
+    assert((await row("select count(*) as n from realtime.messages")).n === 0, "Other store changes do not notify these sessions");
+    await db.query("update public.products set price = 12 where id=$1", [second]);
+    const topic = `cashier-prices:${await hashToken(`cashier-prices:${hash}`)}`;
+    const message = await row("select * from realtime.messages where topic=$1", [topic]);
+    assert(message?.private === true && message.event === "price_changed" &&
+      JSON.stringify(message.payload) === "{}", "Price changes send a private, empty notification");
+    assert((await row("select count(*) as n from realtime.messages")).n === 2, "Every active session in the store is notified");
+    await db.exec("set role anon;");
+    await db.query("select set_config('realtime.topic',$1,false)", ["cashier-prices:unknown"]);
+    assert((await row("select count(*) as n from realtime.messages")).n === 0, "Unknown topics cannot receive notifications");
+    await db.query("select set_config('realtime.topic',$1,false)", [topic]);
+    assert(await row("select 1 from realtime.messages where topic=$1", [topic]), "The terminal can receive on its topic");
+    assert((await row("select count(*) as n from realtime.messages")).n === 1, "The terminal cannot receive another session's message");
+    await fails("select realtime.send('{}','price_changed',$1,true)", [topic], "42501");
+    await db.exec("reset role;");
+    await db.exec("set role service_role;");
+
+    const offlineId = "50000000-0000-4000-8000-000000000005";
+    const offlineItem = { product_id: second, quantity: 1.5, expected_price: 10, price_version_id: priceVersion };
+    const submit = (item: typeof offlineItem) => [hash, offlineId, JSON.stringify([item]), "sale", offlineShift.id];
+    await fails(checkoutForShift, submit({ ...offlineItem, price_version_id: "invalid" }), "22023");
+    await fails(checkoutForShift, submit({ ...offlineItem, expected_price: 9 }), "22023");
+    await fails(checkoutForShift, submit({ ...offlineItem, product_id: first }), "22023");
+    const offlineReceipt = await row(checkoutForShift, submit(offlineItem));
+    assert(Number(offlineReceipt.total) === 15, "Offline receipt keeps the confirmed previous price");
+    await row(checkoutForShift, submit(offlineItem));
+    assert(Number((await row("select stock from public.products where id=$1", [second])).stock) === 0.5, "Retry deducts stock once");
+    const movement = await row("select * from public.stock_movements where receipt_id=$1", [offlineId]);
+    assert(movement.sold_at_previous_price === true, "The receipt movement records the old price");
+    assert(Number(movement.price_at_time) === 10 && Number(movement.catalog_price_at_sync) === 12, "The movement keeps both prices");
+    const updated = (await row("select public.cashier_tablet_snapshot($1) as data", [hash])).data as HistoricalSnapshot;
+    assert(Number(updated.shift.revenue) === 15, "Shift revenue reflects the amount received");
+    assert(updated.movements.some((item) => item.receipt_id === offlineId && item.sold_at_previous_price && item.catalog_price_at_sync === 12), "POS history includes the price difference");
+    assert(updated.products.find((product) => product.id === second)?.price_version_id !== priceVersion, "Updated catalog has a new price version");
+
+    await row("select * from public.cashier_close_shift($1,$2,15)", [hash, offlineShift.id]);
+    const nextShift = await row("select * from public.cashier_open_shift($1,0)", [hash]);
+    await fails(checkoutForShift, [
+      hash, "50000000-0000-4000-8000-000000000006",
+      JSON.stringify([{ ...offlineItem, quantity: 0.5 }]), "sale", nextShift.id,
+    ], "22023");
+
+    await db.exec("reset role;");
+    await db.query("update public.products set price = 13 where id=$1", [second]);
+    await db.exec("set role authenticated;");
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [owner]);
+    const ownerMovement = await row("select * from public.stock_movements where receipt_id=$1", [offlineId]);
+    assert(Number(ownerMovement.catalog_price_at_sync) === 12, "Owner history retains the price at checkout after another price change");
+    const summary = (await row("select public.get_owner_dashboard($1, 7) as data", [store])).data as { revenue: number };
+    assert(Number(summary.revenue) === 35.01, "Owner dashboard reports revenue at the prices paid");
+    await db.exec("reset role; set role service_role;");
+    await db.query("select public.cashier_logout($1)", [hash]);
+    await db.exec("reset role;");
+    await db.query("update public.products set price = 14 where id=$1", [second]);
+    assert((await row("select count(*) as n from realtime.messages where topic=$1", [topic])).n === 2,
+      "A revoked session stops receiving new messages");
+    await db.exec("set role anon;");
+    assert(!(await row("select 1 from realtime.messages where topic=$1", [topic])), "A revoked session cannot rejoin");
   } finally { await db.close(); }
 });

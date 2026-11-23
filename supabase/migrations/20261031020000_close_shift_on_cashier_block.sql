@@ -1,7 +1,13 @@
 -- Blocking ends both the cashier session and their open shift atomically.
-create or replace function private.revoke_blocked_cashier_sessions() returns trigger
-language plpgsql security definer set search_path = '' as $$
-declare s public.cashier_shifts; revenue numeric;
+create or replace function private.revoke_blocked_cashier_sessions()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = ''
+  as $$
+declare
+  s public.cashier_shifts;
+  revenue numeric;
 begin
   if new.is_active is distinct from true then
     update private.cashier_sessions set revoked_at = clock_timestamp()
@@ -21,10 +27,21 @@ begin
     end loop;
   end if;
   return new;
-end; $$;
+end;
+$$;
 
 -- Repair open shifts belonging to cashiers blocked before this migration.
-update public.cashiers c set is_active = c.is_active
-where c.is_active is distinct from true and exists (
-  select 1 from public.cashier_shifts s where s.cashier_id = c.id and s.closed_at is null
-);
+update
+  public.cashiers c
+set
+  is_active = c.is_active
+where
+  c.is_active is distinct from true
+  and exists (
+    select
+      1
+    from
+      public.cashier_shifts s
+    where
+      s.cashier_id = c.id
+      and s.closed_at is null);

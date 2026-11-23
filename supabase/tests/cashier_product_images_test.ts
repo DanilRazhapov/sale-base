@@ -25,6 +25,7 @@ Deno.test("cashier snapshot includes image keys only for active products in its 
       grant execute on function auth.uid() to authenticated, anon, service_role;
       insert into auth.users(id) values('${owner}');
     `);
+    await db.exec(await Deno.readTextFile(new URL("./realtime_fixture.sql", import.meta.url)));
     const migrations: string[] = [];
     for await (const entry of Deno.readDir(new URL("../migrations/", import.meta.url))) {
       if (entry.name.endsWith(".sql") && !entry.name.includes("schedule")) migrations.push(entry.name);

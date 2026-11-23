@@ -91,8 +91,8 @@ function deviceCookie(token: string) {
     return `${deviceCookieName}=${token}; ${cookieOptions}; Max-Age=${maxAge}`;
 }
 
-async function sessionId(token: string) {
-    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`cashier-tab:${token}`));
+async function sha256(value: string) {
+    const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
     return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -134,7 +134,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     let currentSession: string | undefined;
     if (action !== "login" && action !== "pairing" && action !== "device") {
         if (!tokenPattern.test(cashierToken)) return reply({ error: "Войдите как кассир." }, 401);
-        currentSession = await sessionId(cashierToken);
+        currentSession = await sha256(`cashier-tab:${cashierToken}`);
         if (
             action !== "snapshot" &&
             !(action === "logout" && expectedSession === undefined) &&
@@ -244,7 +244,10 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
             if (!result.data) return reply({ error: "Сервис не вернул данные кассы." }, 502);
             const cookie = cashierMigrating ? sessionCookie(cashierToken, result?.data?.expires_at) : undefined;
             if (cashierMigrating && !cookie) return reply({ error: "Срок действия сессии истёк." }, 401);
-            return reply({ data: result.data, sessionId: currentSession }, 200, cookie);
+            // Match the topic derived from the stored session hash in the Realtime migration.
+            const sessionHash = await sha256(cashierToken);
+            const priceChannel = `cashier-prices:${await sha256(`cashier-prices:${sessionHash}`)}`;
+            return reply({ data: result.data, sessionId: currentSession, priceChannel }, 200, cookie);
         }
         return reply(result);
     } catch (error) {

@@ -1,6 +1,14 @@
 -- Aggregate sales on the server, retaining RLS and explicit owner scoping.
-create function public.get_owner_dashboard(p_store_id uuid default null, p_days integer default 30)
-returns jsonb language plpgsql stable security invoker set search_path = '' as $$
+create function public.get_owner_dashboard(
+  p_store_id uuid default null,
+  p_days integer default 30
+)
+  returns jsonb
+  language plpgsql
+  stable
+  security invoker
+  set search_path = ''
+  as $$
 declare
   today date := (now() at time zone 'Asia/Bishkek')::date;
   first_day date;
@@ -24,7 +32,9 @@ begin
     select s.id from public.stores s
     where s.is_active and public.is_store_owner(s.id)
       and (p_store_id is null or s.id = p_store_id)
-  ), sales as materialized (
+  ),
+
+  sales as materialized (
     select m.id, m.receipt_id,
       (m.created_at at time zone 'Asia/Bishkek')::date as day,
       coalesce(c.name, 'Без категории') as category,
@@ -36,21 +46,43 @@ begin
     where m.direction = -1 and m.movement_type = 'расход' and m.price_at_time is not null
       and m.created_at >= (first_day::timestamp at time zone 'Asia/Bishkek')
       and m.created_at <= now()
-  ), daily as (
+  ),
+
+  daily as (
     select day, sum(revenue) as revenue from sales group by day
-  ), calendar as (
+  ),
+
+  calendar as (
     select first_day + n as day from generate_series(0, p_days - 1) n
-  ), categories as (
+  ),
+
+  categories as (
     select category as name, sum(revenue) as revenue from sales group by category
   )
   select jsonb_build_object(
     'revenue', (select coalesce(sum(revenue), 0) from sales),
     -- Cart lines count once per receipt; pre-cart sales count once per movement.
     'sales_count', (select count(distinct coalesce(receipt_id, id)) from sales),
-    'daily', (select jsonb_agg(jsonb_build_object('date', c.day, 'revenue', coalesce(d.revenue, 0)) order by c.day)
-      from calendar c left join daily d using (day)),
-    'categories', (select coalesce(jsonb_agg(jsonb_build_object('name', name, 'revenue', revenue)
-      order by revenue desc, name), '[]'::jsonb) from categories),
+    'daily', (
+      select jsonb_agg(
+        jsonb_build_object(
+          'date', c.day,
+          'revenue', coalesce(d.revenue, 0)
+        ) order by c.day
+      )
+      from calendar c
+      left join daily d using (day)
+    ),
+    'categories', (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object('name', name, 'revenue', revenue)
+          order by revenue desc, name
+        ),
+        '[]'::jsonb
+      )
+      from categories
+    ),
     'updated_at', now()
   ) into result;
   return result;

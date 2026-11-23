@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFile, access } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,6 +43,30 @@ try {
   const upstream = await worker.fetch(request({ action: 'pairing', code: '1234567', name: 'Test' }), config.vars)
   assert.equal(upstream.status, 400)
   assert.equal((await upstream.json()).error, 'test upstream response')
+
+  const token = 'a'.repeat(64)
+  const digest = value => createHash('sha256').update(value).digest('hex')
+  const snapshotRequest = () => {
+    const req = request({ action: 'snapshot' })
+    req.headers.set('Cookie', '__Secure-salebase_cashier=' + token)
+    return req
+  }
+  globalThis.fetch = async (_url, options) => {
+    assert.deepEqual(JSON.parse(options.body), { action: 'snapshot', token })
+    return Response.json({ data: {} })
+  }
+  const snapshot = await worker.fetch(snapshotRequest(), config.vars)
+  assert.equal(snapshot.status, 200)
+  assert.equal(snapshot.headers.get('Cache-Control'), 'no-store')
+  assert.deepEqual(await snapshot.json(), {
+    data: {},
+    sessionId: digest(`cashier-tab:${token}`),
+    priceChannel: `cashier-prices:${digest(`cashier-prices:${digest(token)}`)}`,
+  })
+  globalThis.fetch = async () => Response.json({ error: 'Session revoked' }, { status: 401 })
+  const revoked = await worker.fetch(snapshotRequest(), config.vars)
+  assert.equal(revoked.status, 401)
+  assert.deepEqual(await revoked.json(), { error: 'Session revoked' })
 
   let redirectCalls = 0
   globalThis.fetch = async (_url, options) => {

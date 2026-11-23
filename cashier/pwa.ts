@@ -39,6 +39,10 @@ export function pwa(): Plugin {
           )));
         });
 
+        self.addEventListener('message', event => {
+          if (event.data === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
+        });
+
         self.addEventListener('activate', event => {
           event.waitUntil(caches.keys().then(keys => Promise.all(
             keys.filter(key => key.startsWith('salebase-shell-') && key !== CACHE)
@@ -53,12 +57,21 @@ export function pwa(): Plugin {
           if (request.method !== 'GET' || url.origin !== self.location.origin) return;
           
           if (request.mode === 'navigate') {
-            event.respondWith(fetch(request, { cache: 'no-cache' }).catch(async error => {
+            event.respondWith((async () => {
+              let response;
+              let networkError;
+              try {
+                response = await fetch(request, { cache: 'no-cache' });
+                if (response.status < 500) return response;
+              } catch (error) {
+                networkError = error;
+              }
               const cache = await caches.open(CACHE);
               const offlineShell = await cache.match('/index.html');
               if (offlineShell) return offlineShell;
-              throw error;
-            }));
+              if (response) return response;
+              throw networkError;
+            })());
           } else if (ASSETS.includes(url.pathname)) {
             event.respondWith(caches.open(CACHE).then(cache => cache.match(url.pathname))
               .then(response => response || fetch(request)));

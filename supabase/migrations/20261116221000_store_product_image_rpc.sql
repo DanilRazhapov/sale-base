@@ -4,11 +4,11 @@ create or replace function public.set_store_product_image(
   p_expected_image_key text,
   p_new_image_key text
 )
-returns boolean
-language plpgsql
-security definer
-set search_path = ''
-as $$
+  returns boolean
+  language plpgsql
+  security definer
+  set search_path = ''
+  as $$
 begin
   if auth.uid() is null
      or not public.is_store_owner(p_store_id) then
@@ -37,10 +37,5 @@ begin
 end;
 $$;
 
-revoke all on function public.set_store_product_image(
-  uuid, uuid, text, text
-) from public, anon;
-
-grant execute on function public.set_store_product_image(
-  uuid, uuid, text, text
-) to authenticated;
+revoke all on function public.set_store_product_image(uuid, uuid, text, text) from public, anon;
+grant execute on function public.set_store_product_image(uuid, uuid, text, text) to authenticated;

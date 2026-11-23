@@ -3,7 +3,7 @@
   "name": "SaleBase Касса",
   "short_name": "SaleBase",
   "lang": "ru",
-  "start_url": "/login",
+  "start_url": "/cashier",
   "scope": "/",
   "display": "standalone",
   "background_color": "#F7F8F3",

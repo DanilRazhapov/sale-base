@@ -32,6 +32,8 @@ function CashierRoutes() {
 
     return (
         <Routes>
+            <Route path="/" element={<Navigate to="/cashier" replace />} />
+            <Route path="/login" element={<Navigate to="/cashier" replace />} />
             <Route
                 path="/login/cashier"
                 element={cashierSession

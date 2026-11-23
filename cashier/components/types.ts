@@ -1,4 +1,5 @@
 import type { TerminalSnapshot } from "../lib/cashierCart";
+import type { LocalOperation } from "../lib/indexedDb/localTypes";
 export type CashierPOSProps = {
     sessionId: string;
     snapshot: TerminalSnapshot;
@@ -7,5 +8,6 @@ export type CashierPOSProps = {
     notice: string;
     refresh: () => Promise<void>;
     logout: () => void;
-    run: (action: () => Promise<void>, success: string) => Promise<void>;
+    queueOperation: (operation: LocalOperation) => Promise<void>;
+    run: (action: () => Promise<void>, success: string, refreshInBackground?: boolean) => Promise<void>;
 };

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { terminalRequest, TerminalError } from "../lib/cashierTerminal";
 import {
     lineCents,
     quantityMilli,
@@ -11,15 +10,15 @@ import {
 } from "../lib/cashierCart";
 import { kindName } from "../lib/cashierFormat";
 import type { CashierPOSProps } from "./types";
+import { getPendingOperation } from "../lib/indexedDb/localOperations";
 
-export function useCashierPOS({ sessionId, snapshot, busy, refresh, run }: CashierPOSProps) {
+export function useCashierPOS({ snapshot, busy, run, queueOperation }: CashierPOSProps) {
     const draftKey = `salebase.cart.${snapshot.cashier.id}`;
     const [draft, setDraft] = useState<CartDraft>(() => readCartDraft(draftKey));
     const [mobileView, setMobileView] = useState<"products" | "cart">("products");
     const [dialog, setDialog] = useState<"clear" | "logout" | "shift" | "history" | "mode" | null>(null);
     const [nextKind, setNextKind] = useState<CartKind>("sale");
     const [cartError, setCartError] = useState("");
-    const [savedTotal, setSavedTotal] = useState<number | null>(null);
     const [storageError, setStorageError] = useState(false);
     const checkoutBusy = useRef(false);
 
@@ -73,7 +72,6 @@ export function useCashierPOS({ sessionId, snapshot, busy, refresh, run }: Cashi
     function add(product: TerminalProduct) {
         if (locked || !ownShift) return;
         setCartError("");
-        setSavedTotal(null);
         const existing = lines.find((line) => line.product_id === product.id);
         if (!existing && lines.length >= 100) {
             setCartError("В корзине может быть до 100 товаров.");
@@ -134,57 +132,56 @@ export function useCashierPOS({ sessionId, snapshot, busy, refresh, run }: Cashi
                 product_id: line.product_id,
                 quantity: quantityMilli(line.quantity)! / 1000,
                 expected_price: line.price,
+                price_version_id:
+                    kind === "sale" ? (productMap.get(line.product_id)?.price_version_id ?? undefined) : undefined,
             })),
         };
-        const submitted = { ...draft, pending: request };
-        // Save the request ID before sending; an uncertain network result can be retried safely.
-        try {
-            sessionStorage.setItem(draftKey, JSON.stringify(submitted));
-        } catch {
-            setStorageError(true);
-        }
-        setDraft(submitted);
         void run(
             async () => {
-                try {
-                    const response = await terminalRequest<{
-                        data: { id: string; total: number };
-                    }>({ action: "checkout", sessionId, ...request });
-                    if (!response.data?.id || response.data.id !== request.request_id)
-                        throw new TerminalError(
-                            "Не удалось подтвердить результат. Повторите сохранение этой корзины.",
-                            0,
-                        );
-                    const cleared: CartDraft = {
-                        lines: [],
-                        kind,
-                        pending: null,
-                    };
-                    // Persist immediately: background refresh must not leave an already sold draft.
-                    try {
-                        sessionStorage.setItem(draftKey, JSON.stringify(cleared));
-                    } catch {
-                        /* Cleared in memory below. */
-                    }
-                    setDraft(cleared);
-                    setSavedTotal(Number(response.data.total));
-                } catch (error) {
-                    // 4xx responses mean the database rejected the transaction. 0/5xx may be an uncertain result.
-                    if (
-                        error instanceof TerminalError &&
-                        error.status >= 400 &&
-                        error.status < 500 &&
-                        error.status !== 401
-                    ) {
-                        setDraft({ ...draft, pending: null });
-                        await refresh();
-                    }
-                    throw error;
+                const shift = snapshot.shift;
+                const queued = pending ? await getPendingOperation(request.request_id) : undefined;
+                if (queued && (
+                    queued.store_id !== snapshot.store.id ||
+                    queued.cashier_id !== snapshot.cashier.id
+                )) {
+                    throw new Error("Операция в очереди относится к другому магазину или кассиру.");
                 }
+                if (!queued) {
+                    if (!shift || shift.cashier_id !== snapshot.cashier.id) {
+                        throw new Error("Откройте свою смену, чтобы сохранить операцию.");
+                    }
+                    // Keep the same ID if the page closes between saving the operation and clearing the draft.
+                    try {
+                        sessionStorage.setItem(draftKey, JSON.stringify({ ...draft, pending: request }));
+                    } catch {
+                        setStorageError(true);
+                    }
+                    try {
+                        await queueOperation({
+                            id: request.request_id,
+                            store_id: snapshot.store.id,
+                            cashier_id: snapshot.cashier.id,
+                            shift_id: shift.id,
+                            created_at: Date.now(),
+                            checkout: request,
+                        });
+                    } catch (error) {
+                        setDraft({ ...draft });
+                        throw error;
+                    }
+                }
+                const cleared: CartDraft = { lines: [], kind, pending: null };
+                try {
+                    sessionStorage.setItem(draftKey, JSON.stringify(cleared));
+                } catch {
+                    setStorageError(true);
+                }
+                setDraft(cleared);
             },
             kind === "sale"
-                ? "Продажа сохранена, остатки и касса обновлены."
-                : `Операция «${kindName[kind]}» сохранена.`,
+                ? "Продажа сохранена на устройстве."
+                : `Операция «${kindName[kind]}» сохранена на устройстве.`,
+            true,
         ).finally(() => {
             checkoutBusy.current = false;
         });
@@ -209,8 +206,6 @@ export function useCashierPOS({ sessionId, snapshot, busy, refresh, run }: Cashi
         nextKind,
         cartError,
         setCartError,
-        savedTotal,
-        setSavedTotal,
         storageError,
         changeKind,
         add,

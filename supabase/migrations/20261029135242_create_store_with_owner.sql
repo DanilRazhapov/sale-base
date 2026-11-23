@@ -1,15 +1,11 @@
 -- Internal RPC: only the Edge Function's admin client may call it.
 -- SECURITY INVOKER preserves the caller's privileges (service_role bypasses RLS).
-create function public.create_store_with_owner(
-  p_user_id uuid,
-  p_name text,
-  p_address text
-)
-returns public.stores
-language plpgsql
-security invoker
-set search_path = ''
-as $$
+create function public.create_store_with_owner(p_user_id uuid, p_name text, p_address text)
+  returns public.stores
+  language plpgsql
+  security invoker
+  set search_path = ''
+  as $$
 declare
   new_store public.stores;
 begin
@@ -37,7 +33,5 @@ begin
 end;
 $$;
 
-revoke all on function public.create_store_with_owner(uuid, text, text)
-  from public, anon, authenticated;
-grant execute on function public.create_store_with_owner(uuid, text, text)
-  to service_role;
+revoke all on function public.create_store_with_owner(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.create_store_with_owner(uuid, text, text) to service_role;

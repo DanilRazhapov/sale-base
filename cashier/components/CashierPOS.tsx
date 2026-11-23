@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { ui } from "../../shared/lib/ui";
 import { money } from "../lib/cashierFormat";
 import { useCashierPOS } from "./useCashierPOS";
@@ -6,11 +6,53 @@ import type { CashierPOSProps } from "./types";
 import { CashierCatalog } from "./CashierCatalog";
 import { CashierCart } from "./CashierCart";
 import { CashierDialogs } from "./CashierDialogs";
+import type { CachedCatalog } from "../lib/indexedDb/localCategories";
 
-export function CashierPOS(props: CashierPOSProps) {
+function CashierHeader({ storeName, children }: { storeName: string; children?: ReactNode }) {
+    return (
+        <header className="pos-header">
+            <div className="pos-brand">
+                <span className="pos-wordmark">salebase</span>
+                <span className="pos-brand-label">Касса</span>
+            </div>
+            <h1 className="pos-store-name" title={storeName}>
+                {storeName}
+            </h1>
+            {children}
+        </header>
+    );
+}
+
+export function CashierPOS(props: CashierPOSProps | { catalog: CachedCatalog; onRetry: () => Promise<void> }) {
+    if ("catalog" in props) {
+        const { catalog, onRetry } = props;
+        const savedAt = new Date(catalog.savedAt);
+        return (
+            <div className="pos-screen" data-view="products">
+                <CashierHeader storeName={catalog.store.name} />
+                <div className="pos-shift-warning">
+                    <span role="status">
+                        Офлайн. Каталог сохранён <time dateTime={savedAt.toISOString()}>{savedAt.toLocaleString("ru-RU")}</time>.
+                    </span>
+                    <button type="button" className={ui.button} onClick={() => void onRetry()}>
+                        Проверить связь
+                    </button>
+                </div>
+                <div className="pos-layout pos-layout--catalog-only">
+                    <div className="pos-catalog-view">
+                        <CashierCatalog snapshot={catalog} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return <ActiveCashierPOS {...props} />;
+}
+
+function ActiveCashierPOS(props: CashierPOSProps) {
     const { snapshot, busy, error, notice } = props;
     const pos = useCashierPOS(props);
-    const { lines, kind, ownShift, total, mobileView, setMobileView, setDialog, cartError, savedTotal } = pos;
+    const { lines, kind, ownShift, total, mobileView, setMobileView, setDialog, cartError } = pos;
     const openCart = useRef<HTMLButtonElement>(null);
     const backToCatalog = useRef<HTMLButtonElement>(null);
     const previousView = useRef(mobileView);
@@ -24,14 +66,7 @@ export function CashierPOS(props: CashierPOSProps) {
 
     return (
         <div className="pos-screen" data-view={mobileView}>
-            <header className="pos-header">
-                <div className="pos-brand">
-                    <span className="pos-wordmark">salebase</span>
-                    <span className="pos-brand-label">Касса</span>
-                </div>
-                <h1 className="pos-store-name" title={snapshot.store.name}>
-                    {snapshot.store.name}
-                </h1>
+            <CashierHeader storeName={snapshot.store.name}>
                 <nav aria-label="Действия кассира">
                     <span className="pos-shift-status" data-open={ownShift}>
                         {ownShift ? "Смена открыта" : "Смена не открыта"}
@@ -48,7 +83,7 @@ export function CashierPOS(props: CashierPOSProps) {
                         <span className="pos-cashier-name">{snapshot.cashier.name} · </span>Смена
                     </button>
                 </nav>
-            </header>
+            </CashierHeader>
             {error && (
                 <p className={ui.error} role="alert">
                     {error}
@@ -76,14 +111,9 @@ export function CashierPOS(props: CashierPOSProps) {
                     {cartError}
                 </p>
             )}
-            {savedTotal !== null && (
-                <p className={ui.notice} role="status">
-                    {kind === "sale" ? `Продажа сохранена на сумму ${money(savedTotal)}.` : "Операция сохранена."}
-                </p>
-            )}
             <div className="pos-layout">
                 <div className="pos-catalog-view">
-                    <CashierCatalog snapshot={snapshot} {...pos} />
+                    <CashierCatalog snapshot={snapshot} actions={pos} />
                     <button
                         ref={openCart}
                         className={ui.button + " pos-open-cart"}
