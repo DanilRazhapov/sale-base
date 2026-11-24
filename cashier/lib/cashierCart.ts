@@ -19,6 +19,7 @@ export type TerminalSnapshot = {
         cashier_id: string;
         cashier_name: string;
         opened_at: string;
+        deadline_at?: string;
         opening_cash: number;
         revenue: number;
     } | null;

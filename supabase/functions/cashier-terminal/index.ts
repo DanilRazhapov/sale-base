@@ -6,6 +6,8 @@ const json = (body: Record<string, unknown>, status = 200) => Response.json(body
 const uuid = (value: unknown): value is string => typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 const numeric = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const timestamp = (value: unknown): value is string => typeof value === "string" &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value));
 
 // The terminal has its own cashier authentication; an owner's JWT never identifies a cashier.
 export default {
@@ -108,7 +110,36 @@ export default {
           }
           rpc = action === "checkout_for_shift" ? "cashier_checkout_for_shift" : "cashier_checkout";
           args = { ...args, p_request_id: body.request_id, p_items: body.items, p_kind: body.kind ?? "sale" };
-          if (action === "checkout_for_shift") args.p_shift_id = body.shift_id;
+          if (action === "checkout_for_shift") {
+            args.p_shift_id = body.shift_id;
+            if (body.recorded_at !== undefined) {
+              if (!timestamp(body.recorded_at)) return json({ error: "Проверьте время операции." }, 400);
+              rpc = "cashier_sync_checkout";
+              args.p_recorded_at = body.recorded_at;
+            }
+          }
+          break;
+        case "sync_shift_open":
+          if (!uuid(body.shift_id) || !timestamp(body.opened_at) || !numeric(body.opening_cash) ||
+            typeof body.opened_offline !== "boolean" ||
+            (body.closing_at !== undefined && (!timestamp(body.closing_at) ||
+              (body.closing_cash !== null && !numeric(body.closing_cash))))) {
+            return json({ error: "Проверьте данные открытия смены." }, 400);
+          }
+          rpc = "cashier_sync_shift_open";
+          Object.assign(args, {
+            p_shift_id: body.shift_id, p_opened_at: body.opened_at, p_opening_cash: body.opening_cash,
+            p_offline: body.opened_offline,
+            p_closing_at: body.closing_at ?? null, p_closing_cash: body.closing_cash ?? null,
+          });
+          break;
+        case "sync_shift_close":
+          if (!uuid(body.shift_id) || !timestamp(body.closed_at) ||
+            (body.closing_cash !== null && !numeric(body.closing_cash))) {
+            return json({ error: "Проверьте данные закрытия смены." }, 400);
+          }
+          rpc = "cashier_sync_shift_close";
+          Object.assign(args, { p_shift_id: body.shift_id, p_closed_at: body.closed_at, p_closing_cash: body.closing_cash });
           break;
         case "open_shift":
           if (!numeric(body.opening_cash)) return json({ error: "Введите сумму наличных." }, 400);

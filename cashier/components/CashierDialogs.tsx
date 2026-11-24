@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { logoutCashier } from "../auth/offlineCashier";
 import { ui } from "../../shared/lib/ui";
 import { money, kindName } from "../lib/cashierFormat";
@@ -6,8 +6,7 @@ import { previousPriceLabel } from "../../shared/lib/formatters";
 import type { CashierPOSProps } from "./types";
 import type { CashierPOSState } from "./useCashierPOS";
 import { TerminalDialog } from "./TerminalDialog";
-import { terminalRequest } from "../lib/cashierTerminal";
-import { listPendingOperations } from "../lib/indexedDb/localOperations";
+import { shiftDeadline } from "../lib/indexedDb/localShifts";
 
 type Props = Pick<
     CashierPOSState,
@@ -22,7 +21,19 @@ type Props = Pick<
     | "nextKind"
     | "setCartError"
 > &
-    Pick<CashierPOSProps, "sessionId" | "snapshot" | "busy" | "error" | "refresh" | "logout" | "run">;
+    Pick<CashierPOSProps, "sessionId" | "snapshot" | "busy" | "error" | "refresh" | "logout" | "run" | "changeShift">;
+
+function ShiftCountdown({ deadline }: { deadline: number }) {
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, []);
+    const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
+    const remaining = [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
+        .map((part) => String(part).padStart(2, "0")).join(":");
+    return <p>До автозакрытия <time dateTime={`PT${seconds}S`}>{remaining}</time></p>;
+}
 
 export function CashierDialogs({
     draft,
@@ -42,6 +53,7 @@ export function CashierDialogs({
     refresh,
     logout,
     run,
+    changeShift,
 }: Props) {
     const [openingCash, setOpeningCash] = useState("0");
     const [closingCash, setClosingCash] = useState("");
@@ -138,13 +150,9 @@ export function CashierDialogs({
                             onSubmit={(event) => {
                                 event.preventDefault();
                                 void run(async () => {
-                                    await terminalRequest({
-                                        action: "open_shift",
-                                        sessionId,
-                                        opening_cash: Number(openingCash),
-                                    });
+                                    await changeShift(Number(openingCash), "open");
                                     setDialog(null);
-                                }, "Вы открыли смену.");
+                                }, "Открытие смены сохранено на устройстве.", true);
                             }}
                         >
                             <label className={ui.label}>
@@ -168,6 +176,7 @@ export function CashierDialogs({
                     ) : ownShift ? (
                         <>
                             <p>Открыта {new Date(snapshot.shift.opened_at).toLocaleString("ru-RU")}</p>
+                            <ShiftCountdown deadline={shiftDeadline(snapshot.shift)} />
                             <dl className="pos-shift-totals">
                                 <dt>На открытии</dt>
                                 <dd>{money(Number(snapshot.shift.opening_cash))}</dd>
@@ -180,20 +189,10 @@ export function CashierDialogs({
                                 onSubmit={(event) => {
                                     event.preventDefault();
                                     void run(async () => {
-                                        const shiftId = snapshot.shift!.id;
-                                        const operations = await listPendingOperations(snapshot.store.id, snapshot.cashier.id);
-                                        if (operations.some((operation) => operation.shift_id === shiftId)) {
-                                            throw new Error("Дождитесь отправки сохранённых операций перед закрытием смены.");
-                                        }
-                                        await terminalRequest({
-                                            action: "close_shift",
-                                            sessionId,
-                                            shift_id: shiftId,
-                                            closing_cash: Number(closingCash),
-                                        });
+                                        await changeShift(Number(closingCash), "close");
                                         setClosingCash("");
                                         setDialog(null);
-                                    }, "Смена закрыта.");
+                                    }, "Закрытие смены сохранено на устройстве.", true);
                                 }}
                             >
                                 <label className={ui.label}>

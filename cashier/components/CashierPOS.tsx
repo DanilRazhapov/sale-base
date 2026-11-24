@@ -23,7 +23,7 @@ function CashierHeader({ storeName, children }: { storeName: string; children?: 
 }
 
 export function CashierPOS(props: CashierPOSProps) {
-    const { snapshot, busy, error, notice } = props;
+    const { snapshot, busy, error, notice, syncNotice } = props;
     const pos = useCashierPOS(props);
     const { lines, kind, ownShift, total, mobileView, setMobileView, setDialog, cartError } = pos;
     const openCart = useRef<HTMLButtonElement>(null);
@@ -57,6 +57,7 @@ export function CashierPOS(props: CashierPOSProps) {
                     </button>
                 </nav>
             </CashierHeader>
+            {syncNotice}
             {error && (
                 <p className={ui.error} role="alert">
                     {error}

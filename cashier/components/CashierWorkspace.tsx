@@ -3,6 +3,10 @@ import { RealtimeClient } from "@supabase/supabase-js";
 import { readLastCatalog, saveCatalog } from "../lib/indexedDb/localCategories";
 import { enqueueOperation, listPendingOperations } from "../lib/indexedDb/localOperations";
 import type { LocalOperation } from "../lib/indexedDb/localTypes";
+import {
+    closeLocalShift, expireLocalShifts, openLocalShift, reconcileLocalShifts, shiftDeadline, visibleShift, type LocalShift,
+} from "../lib/indexedDb/localShifts";
+import { syncCashierShifts } from "../lib/syncCashierShifts";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { TerminalError, terminalRequest, terminalUnavailable, type TerminalResponse } from "../lib/cashierTerminal";
 import {
@@ -24,15 +28,21 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
     const [requiresSignIn, setRequiresSignIn] = useState(false);
     const [showSignIn, setShowSignIn] = useState(false);
     const [signInError, setSignInError] = useState("");
+    const [shifts, setShifts] = useState<LocalShift[]>([]);
+    const [usingCachedSnapshot, setUsingCachedSnapshot] = useState(false);
     const working = useRef(false);
     const loadingSnapshot = useRef(false);
     const syncing = useRef(false);
+    const refreshPending = useRef<(() => void) | null>(null);
     const version = useRef(0);
     const storeIdRef = useRef(offlineSession?.snapshot.store.id);
     const sessionIdRef = useRef(offlineSession?.sessionId);
 
-    const load = useCallback(async () => {
-        if (syncing.current) return;
+    const load = useCallback(async function loadSnapshot(): Promise<void> {
+        if (syncing.current) {
+            refreshPending.current = () => void loadSnapshot();
+            return;
+        }
         const current = ++version.current;
         loadingSnapshot.current = true;
         try {
@@ -56,33 +66,25 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                     let response = await getSnapshot();
                     if (current !== version.current) return;
                     const { store, cashier } = response.data;
+                    const localShifts = await expireLocalShifts(store.id);
                     const operations = await listPendingOperations(store.id);
                     const confirmedIds: string[] = [];
-                    const otherCashierPending = operations.some((operation) => operation.cashier_id !== cashier.id);
-                    let syncError = otherCashierPending ? "На устройстве есть неотправленные операции другого кассира." : "";
+                    const pendingShifts = localShifts.filter((row) => row.openingPending || (row.close && !row.close.sent));
+                    const otherCashierPending = operations.some((operation) => operation.cashier_id !== cashier.id) ||
+                        pendingShifts.some((row) => row.shift.cashier_id !== cashier.id);
+                    let syncError = otherCashierPending ? "На устройстве есть неотправленные данные другого кассира." : "";
                     let useCachedStock = otherCashierPending;
+                    let changed = false;
 
                     if (working.current) {
                         useCachedStock ||= operations.length > 0;
                     } else if (!otherCashierPending) {
                         try {
-                            for (const operation of operations) {
-                                if (current !== version.current) return;
-                                const receipt = await terminalRequest<{ data: { id: string; shift_id: string } }>(
-                                    {
-                                        action: "checkout_for_shift",
-                                        sessionId: response.sessionId,
-                                        ...operation.checkout,
-                                        shift_id: operation.shift_id,
-                                    },
-                                    AbortSignal.timeout(20000),
-                                );
-                                if (receipt.data?.id !== operation.id || receipt.data.shift_id !== operation.shift_id) {
-                                    throw new Error("Сервер не подтвердил чек для сохранённой смены.");
-                                }
-                                confirmedIds.push(operation.id);
-                            }
+                            changed = await syncCashierShifts(
+                                response.sessionId, pendingShifts, operations, confirmedIds, () => current === version.current,
+                            );
                         } catch (error) {
+                            if (error instanceof TerminalError && error.status === 401) throw error;
                             syncError = `Очередь сохранена на устройстве. Синхронизация приостановлена. ${errorText(error)}`;
                             // A lost reply can leave a committed receipt in the queue. Keep the matched local catalog and queue.
                             useCachedStock ||= !(error instanceof TerminalError && [400, 409].includes(error.status));
@@ -95,7 +97,7 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                         if (!catalog) throw new Error(syncError || "Дождитесь синхронизации сохранённых операций.");
                         response.data = { ...response.data, products: catalog.products, categories: catalog.categories };
                     } else {
-                        if (confirmedIds.length) response = await getSnapshot();
+                        if (changed || confirmedIds.length || syncError) response = await getSnapshot();
                         if (current !== version.current) return;
                         if (response.data.store.id !== store.id || response.data.cashier.id !== cashier.id) {
                             throw new Error("Сессия кассира изменилась. Обновите данные.");
@@ -106,13 +108,22 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                     if (current !== version.current) return;
                     await rememberSnapshot(response);
                     if (current !== version.current) return;
+                    const latestShifts = useCachedStock
+                        ? await expireLocalShifts(store.id)
+                        : await reconcileLocalShifts(store.id, response.data.shift);
+                    if (current !== version.current) return;
                     storeIdRef.current = store.id;
                     sessionIdRef.current = response.sessionId;
                     setTerminal(response);
+                    setShifts(latestShifts);
+                    setUsingCachedSnapshot(useCachedStock);
                     setRequiresSignIn(false);
                     setError(syncError);
                 } finally {
                     syncing.current = false;
+                    const refresh = refreshPending.current;
+                    refreshPending.current = null;
+                    if (!working.current) refresh?.();
                 }
             }
 
@@ -145,8 +156,11 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                         return;
                     }
                     const catalog = await readLastCatalog(storeId);
+                    const localShifts = await expireLocalShifts(storeId);
                     if (current !== version.current) return;
                     if (catalog) {
+                        setShifts(localShifts);
+                        setUsingCachedSnapshot(true);
                         const { products, categories } = catalog;
                         setTerminal((previous) => {
                             if (previous) return { ...previous, data: { ...previous.data, products, categories } };
@@ -171,12 +185,17 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
         }
     }, [localSession, onLogout]);
 
+    const shift = terminal ? visibleShift(terminal.data.shift, shifts, usingCachedSnapshot) : null;
+
     async function queueOperation(operation: LocalOperation) {
         if (localSession && !await isOfflineSessionCurrent(localSession)) {
             onLogout();
             throw new Error("Локальная сессия кассира завершена. Войдите заново.");
         }
-        const products = await enqueueOperation(operation);
+        if (shift?.id !== operation.shift_id || shift.cashier_id !== operation.cashier_id) {
+            throw new Error("Смена уже закрыта. Откройте новую смену.");
+        }
+        const products = await enqueueOperation(operation, shift);
         setTerminal((previous) => previous?.data.store.id === operation.store_id
             ? { ...previous, data: { ...previous.data, products } }
             : previous);
@@ -190,6 +209,7 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
         const invalidate = () => {
             ++version.current;
             loadingSnapshot.current = false;
+            refreshPending.current = null;
         };
         window.addEventListener("focus", refresh);
         window.addEventListener("online", refresh);
@@ -200,6 +220,44 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
             window.removeEventListener("online", refresh);
         };
     }, [load]);
+
+    const ownLocalShift = shifts.find((row) => !row.close && row.shift.cashier_id === terminal?.data.cashier.id);
+    const timedShift = ownLocalShift?.shift ?? terminal?.data.shift;
+    const shiftExpiry = timedShift && timedShift.cashier_id === terminal?.data.cashier.id &&
+        !shifts.some((row) => row.shift.id === timedShift.id && row.close) ? shiftDeadline(timedShift) : undefined;
+    const storeId = terminal?.data.store.id;
+    useEffect(() => {
+        if (shiftExpiry === undefined || !storeId || !timedShift) return;
+        let active = true;
+        let timer: number | undefined;
+        const closeExpired = async () => {
+            window.clearTimeout(timer);
+            const remaining = shiftExpiry - Date.now();
+            if (remaining > 0) {
+                timer = window.setTimeout(() => void closeExpired(), remaining);
+                return;
+            }
+            try {
+                const localShifts = ownLocalShift
+                    ? await expireLocalShifts(storeId)
+                    : await closeLocalShift(storeId, timedShift, null);
+                if (!active) return;
+                setShifts(localShifts);
+                setNotice("Смена закрыта автоматически по истечении срока.");
+                if (navigator.onLine && !working.current && !loadingSnapshot.current) void load();
+            } catch (failure) {
+                if (active) setError(errorText(failure));
+            }
+        };
+        timer = window.setTimeout(() => void closeExpired(), Math.max(0, shiftExpiry - Date.now()));
+        const checkExpiry = () => void closeExpired();
+        document.addEventListener("visibilitychange", checkExpiry);
+        return () => {
+            active = false;
+            window.clearTimeout(timer);
+            document.removeEventListener("visibilitychange", checkExpiry);
+        };
+    }, [load, ownLocalShift, shiftExpiry, storeId, timedShift]);
 
     const priceChannel = terminal?.priceChannel;
     const expiresAt = terminal?.data.expires_at;
@@ -354,19 +412,41 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
         }
     }
 
+    async function changeShift(cash: number, action: "open" | "close") {
+        if (!terminal) return;
+        if (localSession && !await isOfflineSessionCurrent(localSession)) {
+            onLogout();
+            throw new Error("Локальная сессия кассира завершена. Войдите заново.");
+        }
+        if (!Number.isFinite(cash) || cash < 0 || cash >= 10_000_000_000 ||
+            Math.abs(cash * 100 - Math.round(cash * 100)) > 0.0001) {
+            throw new Error("Введите корректную сумму наличных.");
+        }
+        if (action === "open") {
+            setShifts(await openLocalShift(
+                { ...terminal.data, shift }, cash, !navigator.onLine || usingCachedSnapshot || requiresSignIn,
+            ));
+        } else if (shift?.cashier_id === terminal.data.cashier.id) {
+            setShifts(await closeLocalShift(terminal.data.store.id, shift, cash));
+        } else {
+            throw new Error("Смена уже закрыта.");
+        }
+    }
+
+    const syncNotice = requiresSignIn && (
+        <div className="pos-shift-warning">
+            <span role="status">Для синхронизации войдите онлайн. Продажи пока сохраняются на устройстве.</span>
+            <button type="button" className={ui.button} disabled={busy} onClick={() => {
+                setSignInError("");
+                setShowSignIn(true);
+            }}>
+                Войти онлайн
+            </button>
+        </div>
+    );
+
     return (
         <main className="pos-page">
-            {requiresSignIn && (
-                <div className="pos-shift-warning">
-                    <span role="status">Для синхронизации войдите онлайн. Продажи пока сохраняются на устройстве.</span>
-                    <button type="button" className={ui.button} disabled={busy} onClick={() => {
-                        setSignInError("");
-                        setShowSignIn(true);
-                    }}>
-                        Войти онлайн
-                    </button>
-                </div>
-            )}
             {showSignIn && (
                 <TerminalDialog title="Войти онлайн" onClose={() => {
                     if (!working.current) setShowSignIn(false);
@@ -388,18 +468,21 @@ export function CashierWorkspace({ onLogout, offlineSession }: {
                 <CashierPOS
                     key={terminal.data.cashier.id}
                     sessionId={terminal.sessionId}
-                    snapshot={terminal.data}
+                    snapshot={{ ...terminal.data, shift }}
                     busy={busy}
                     refresh={load}
                     logout={onLogout}
                     queueOperation={queueOperation}
+                    changeShift={changeShift}
                     run={run}
                     error={error}
                     notice={notice}
+                    syncNotice={syncNotice}
                 />
             ) : (
                 <div className="mx-auto mt-[15vh] max-w-lg text-center [&_h1]:mb-4 [&_button]:m-2">
                     <h1 className={ui.title}>Рабочее место кассира</h1>
+                    {syncNotice}
                     {error ? (
                         <>
                             <p role="alert">{error}</p>

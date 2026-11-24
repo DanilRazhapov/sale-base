@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { TerminalError, terminalRequest } from "../lib/cashierTerminal";
+import { watchSignedOutShiftExpiry } from "../lib/indexedDb/localShifts";
 import { CashierSessionContext } from "./session";
 import { flushPendingLogout, readCachedSessionId, rejectSession, type OfflineSession } from "./offlineCashier";
 
@@ -57,8 +58,12 @@ export function CashierSessionProvider({ children }: { children: ReactNode }) {
             });
         };
         finishLogout();
+        const stopShiftTimer = watchSignedOutShiftExpiry();
         window.addEventListener("online", finishLogout);
-        return () => window.removeEventListener("online", finishLogout);
+        return () => {
+            stopShiftTimer();
+            window.removeEventListener("online", finishLogout);
+        };
     }, [cashierSession]);
 
     return (

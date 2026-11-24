@@ -1,14 +1,16 @@
 import { openCashierDb } from "./localDb";
 import { withPendingStock } from "./localStock";
 import type { LocalOperation, LocalProduct } from "./localTypes";
+import { shiftDeadline, type LocalShift, type Shift } from "./localShifts";
 
-export async function enqueueOperation(operation: LocalOperation): Promise<LocalProduct[]> {
+export async function enqueueOperation(operation: LocalOperation, shift: Shift): Promise<LocalProduct[]> {
     const db = await openCashierDb();
 
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(["products", "pendingOperations"], "readwrite");
+        const tx = db.transaction(["products", "pendingOperations", "shifts"], "readwrite");
         const queue = tx.objectStore("pendingOperations");
         const products = tx.objectStore("products").index("byStore").getAll(operation.store_id);
+        const localShift = tx.objectStore("shifts").get(operation.shift_id);
         const pending = queue.getAll();
         let updatedProducts: LocalProduct[] = [];
         let stockError: Error | undefined;
@@ -19,6 +21,13 @@ export async function enqueueOperation(operation: LocalOperation): Promise<Local
         };
 
         pending.onsuccess = () => {
+            const saved: LocalShift | undefined = localShift.result;
+            if (saved?.close || Date.now() >= shiftDeadline(shift)) {
+                stockError = new Error("Смена уже закрыта. Откройте новую смену.");
+                tx.abort();
+                return;
+            }
+            operation.created_at = Date.now();
             const operations = (pending.result as LocalOperation[]).filter(
                 (queued) => queued.store_id === operation.store_id,
             );

@@ -182,6 +182,42 @@ Deno.test("cart checkout: atomicity, prices, cashier attribution and idempotent 
     assert(Number(ownerMovement.catalog_price_at_sync) === 12, "Owner history retains the price at checkout after another price change");
     const summary = (await row("select public.get_owner_dashboard($1, 7) as data", [store])).data as { revenue: number };
     assert(Number(summary.revenue) === 35.01, "Owner dashboard reports revenue at the prices paid");
+
+    await db.exec("reset role; set role service_role;");
+    const syncOpen = "select * from public.cashier_sync_shift_open($1,$2,$3,$4,$5,$6,$7)";
+    const syncClose = "select * from public.cashier_sync_shift_close($1,$2,$3,$4)";
+    const syncSale = "select * from public.cashier_sync_checkout($1,$2,$3::jsonb,'sale',$4,$5)";
+    const archivedShift = crypto.randomUUID();
+    const archivedSale = crypto.randomUUID();
+    const hour = 3_600_000;
+    const start = Date.now() - 30 * hour;
+    const iso = (milliseconds: number) => new Date(milliseconds).toISOString();
+    const deadline = iso(start + 14 * hour);
+    const opening = [hash, archivedShift, iso(start), 50, true, deadline, null];
+    const archived = await row(syncOpen, opening);
+    const archivedEnd = archived.closed_at instanceof Date ? archived.closed_at : new Date(String(archived.closed_at));
+    assert(archived.automatically_closed === true && archivedEnd.toISOString() === deadline,
+      "An expired offline shift closes at its original 14-hour deadline");
+    assert((await row(syncOpen, opening)).id === archivedShift, "Repeated opening uses the same shift");
+    await fails(syncOpen, [otherHash, ...opening.slice(1)], "PT409");
+    await fails(syncOpen, [otherHash, crypto.randomUUID(), iso(Date.now()), 0, true, null, null], "PT409");
+    const archivedItems = JSON.stringify([{ product_id: second, quantity: 0.25, expected_price: 13 }]);
+    await row(syncSale, [hash, archivedSale, archivedItems, archivedShift, iso(start + 13 * hour)]);
+    await row(syncSale, [hash, archivedSale, archivedItems, archivedShift, iso(start + 13 * hour)]);
+    await fails(syncSale, [hash, crypto.randomUUID(), archivedItems, archivedShift, deadline], "PT409");
+    await fails(syncSale, [otherHash, crypto.randomUUID(), archivedItems, archivedShift, iso(start + hour)], "PT409");
+    const synced = await row(syncClose, [hash, archivedShift, deadline, null]);
+    assert(Number(synced.expected_cash) === 53.25 && synced.closing_cash === null, "Late sale updates auto-close totals without inventing counted cash");
+    assert(Number((await row("select stock from public.products where id=$1", [second])).stock) === 0.25, "Historical retry deducts stock only once");
+    const manualShift = crypto.randomUUID();
+    const manualOpen = iso(Date.now() - 15 * hour);
+    const manualClose = iso(Date.now() - 15 * hour + 600_000);
+    await row(syncOpen, [hash, manualShift, manualOpen, 20, true, manualClose, 23]);
+    const counted = await row(syncClose, [hash, manualShift, manualClose, 23]);
+    assert(Number(counted.closing_cash) === 23 && counted.automatically_closed === false, "Manual close keeps the originally counted cash");
+    assert((await row("select id from public.cashier_shifts where closed_at is null and store_id=$1", [store])).id === nextShift.id,
+      "Historical replay leaves the current store shift intact");
+
     await db.exec("reset role;");
     const countTopic = "select count(*) as n from realtime.messages where topic=$1";
     const beforeLogout = await row(countTopic, [topic]);

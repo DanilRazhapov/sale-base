@@ -1,5 +1,5 @@
 const DB_NAME = "salebase-cashier";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -38,6 +38,9 @@ export function openCashierDb(): Promise<IDBDatabase> {
             }
             if (event.oldVersion < 3) {
                 db.createObjectStore("pendingOperations", { keyPath: "id"});
+            }
+            if (event.oldVersion < 4) {
+                db.createObjectStore("shifts", { keyPath: "shift.id" }).createIndex("byStore", "storeId");
             }
         };
 
